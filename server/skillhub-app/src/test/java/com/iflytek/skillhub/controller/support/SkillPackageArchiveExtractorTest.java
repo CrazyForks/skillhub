@@ -126,6 +126,67 @@ class SkillPackageArchiveExtractorTest {
         assertTrue(entries.stream().anyMatch(e -> e.path().equals("dir-b/other.md")));
     }
 
+    @Test
+    void promotesSkillMdFromSubdirectoryAndDiscardsRootFiles() throws Exception {
+        byte[] zipBytes = createZip(Map.of(
+                "my-skill/SKILL.md", "---\nname: test\n---\n".getBytes(),
+                "my-skill/README.md", "# readme".getBytes(),
+                "other.txt", "stray file".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        assertEquals(2, result.entries().size());
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("SKILL.md")));
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("README.md")));
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("other.txt")));
+    }
+
+    @Test
+    void rejectsAmbiguousMultipleSkillMdInSubdirectories() throws Exception {
+        byte[] zipBytes = createZip(Map.of(
+                "dir1/SKILL.md", "---\nname: a\n---\n".getBytes(),
+                "dir2/SKILL.md", "---\nname: b\n---\n".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> extractor.extractWithWarnings(file));
+        assertTrue(error.getMessage().contains("Ambiguous"));
+    }
+
+    @Test
+    void noPromotionWhenSkillMdAtRoot() throws Exception {
+        byte[] zipBytes = createZip(Map.of(
+                "SKILL.md", "---\nname: test\n---\n".getBytes(),
+                "sub/file.txt", "content".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        assertEquals(2, result.entries().size());
+        assertTrue(result.warnings().isEmpty());
+    }
+
+    @Test
+    void promotesSubdirectoryPreservingNestedPaths() throws Exception {
+        byte[] zipBytes = createZip(Map.of(
+                "my-skill/SKILL.md", "---\nname: test\n---\n".getBytes(),
+                "my-skill/sub/deep.md", "nested".getBytes(),
+                "stray.txt", "ignored".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        assertEquals(2, result.entries().size());
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("SKILL.md")));
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("sub/deep.md")));
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("stray.txt")));
+    }
+
     private byte[] createZip(String entryName, String content) throws Exception {
         return createZip(entryName, content.getBytes(StandardCharsets.UTF_8));
     }

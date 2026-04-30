@@ -14,6 +14,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -202,6 +203,67 @@ class SkillPackageArchiveExtractorTest {
         assertEquals(2, entries.size());
         assertTrue(entries.stream().noneMatch(e -> e.path().contains("MACOSX")));
         assertTrue(entries.stream().noneMatch(e -> e.path().contains(".DS_Store")));
+    }
+
+    @Test
+    void realWorldMacZipWithNestedSkillMd() throws Exception {
+        // Simulates: ui-ux-pro-max/uiux/SKILL.md + __MACOSX + .DS_Store + stray csv
+        byte[] zipBytes = createZip(Map.of(
+                "ui-ux-pro-max/uiux/SKILL.md", "---\nname: uiux\nversion: 1.0.0\n---\nBody".getBytes(),
+                "ui-ux-pro-max/uiux/scripts/core.py", "# code".getBytes(),
+                "ui-ux-pro-max/uiux/data/styles.csv", "col1,col2".getBytes(),
+                "ui-ux-pro-max/stray.csv", "stray data".getBytes(),
+                "__MACOSX/ui-ux-pro-max/._stray.csv", "resource fork".getBytes(),
+                "ui-ux-pro-max/.DS_Store", "binary".getBytes(),
+                "__MACOSX/._ui-ux-pro-max", "resource fork".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        // macOS files filtered, root stripped to ui-ux-pro-max/, then uiux/ promoted
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("SKILL.md")));
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("scripts/core.py")));
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("data/styles.csv")));
+        assertTrue(result.entries().stream().noneMatch(e -> e.path().contains("MACOSX")));
+        assertTrue(result.entries().stream().noneMatch(e -> e.path().contains(".DS_Store")));
+        // stray.csv outside uiux/ should be in warnings
+        assertFalse(result.warnings().isEmpty());
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("stray.csv")));
+    }
+
+    @Test
+    void macZipWithSingleFolderAndSkillMdAtRoot() throws Exception {
+        // All files under one folder, SKILL.md at folder root — simplest macOS case
+        byte[] zipBytes = createZip(Map.of(
+                "my-skill/SKILL.md", "---\nname: test\nversion: 1.0.0\n---\nBody".getBytes(),
+                "my-skill/README.md", "# readme".getBytes(),
+                "__MACOSX/my-skill/._SKILL.md", "fork".getBytes(),
+                "__MACOSX/._my-skill", "fork".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        assertEquals(2, result.entries().size());
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("SKILL.md")));
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("README.md")));
+        assertTrue(result.warnings().isEmpty());
+    }
+
+    @Test
+    void extractWithWarningsNoSkillMdAnywhere() throws Exception {
+        byte[] zipBytes = createZip(Map.of(
+                "README.md", "# no skill".getBytes(),
+                "config.json", "{}".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        // No SKILL.md found — entries returned as-is, validator will catch the error
+        assertEquals(2, result.entries().size());
+        assertTrue(result.warnings().isEmpty());
     }
 
     private byte[] createZip(String entryName, String content) throws Exception {

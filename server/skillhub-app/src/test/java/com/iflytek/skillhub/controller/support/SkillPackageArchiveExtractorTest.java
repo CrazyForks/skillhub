@@ -187,6 +187,23 @@ class SkillPackageArchiveExtractorTest {
         assertTrue(result.warnings().stream().anyMatch(w -> w.contains("stray.txt")));
     }
 
+    @Test
+    void filtersMacOsMetadataEntries() throws Exception {
+        byte[] zipBytes = createZip(Map.of(
+                "my-skill/SKILL.md", "---\nname: test\n---\n".getBytes(),
+                "my-skill/README.md", "# readme".getBytes(),
+                "__MACOSX/my-skill/._SKILL.md", "resource fork".getBytes(),
+                "my-skill/.DS_Store", "binary".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        List<PackageEntry> entries = extractor.extract(file);
+
+        assertEquals(2, entries.size());
+        assertTrue(entries.stream().noneMatch(e -> e.path().contains("MACOSX")));
+        assertTrue(entries.stream().noneMatch(e -> e.path().contains(".DS_Store")));
+    }
+
     private byte[] createZip(String entryName, String content) throws Exception {
         return createZip(entryName, content.getBytes(StandardCharsets.UTF_8));
     }

@@ -49,6 +49,11 @@ public class SkillPackageArchiveExtractor {
                     continue;
                 }
 
+                if (isOsMetadataEntry(zipEntry.getName())) {
+                    zis.closeEntry();
+                    continue;
+                }
+
                 if (entries.size() >= maxFileCount) {
                     throw new IllegalArgumentException(
                             "Too many files: more than " + maxFileCount
@@ -157,6 +162,13 @@ public class SkillPackageArchiveExtractor {
         }
 
         return new ExtractionResult(promoted, warnings);
+    }
+
+    private static boolean isOsMetadataEntry(String name) {
+        String normalized = name.replace('\\', '/');
+        if (normalized.startsWith("__MACOSX/") || normalized.equals("__MACOSX")) return true;
+        String fileName = normalized.contains("/") ? normalized.substring(normalized.lastIndexOf('/') + 1) : normalized;
+        return fileName.equals(".DS_Store") || fileName.startsWith("._");
     }
 
     private byte[] readEntry(ZipInputStream zis, String path) throws IOException {

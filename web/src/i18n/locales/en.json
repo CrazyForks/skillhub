@@ -428,24 +428,6 @@
     "unfreeze": "Unfreeze",
     "archive": "Archive",
     "restore": "Restore",
-    "delete": {
-      "button": "Delete",
-      "confirm": {
-        "title": "Delete namespace",
-        "description": "\"{{name}}\" will be permanently deleted. This action cannot be undone. Please provide a reason for deletion."
-      },
-      "reason": {
-        "label": "Deletion reason",
-        "placeholder": "Please explain why this namespace needs to be deleted..."
-      },
-      "success": {
-        "title": "Namespace deleted",
-        "description": "\"{{name}}\" has been permanently deleted."
-      },
-      "error": {
-        "title": "Failed to delete namespace"
-      }
-    },
     "activeHint": "This namespace is fully active and can continue managing members, reviews, and skill publishing.",
     "frozenHint": "This namespace is frozen. Members can still view it, but it is read-only and cannot publish or change membership.",
     "archivedHint": "This namespace is archived. Public entry points are hidden, but you can still view and restore it from the dashboard.",
@@ -770,7 +752,25 @@
     "notFound": "Namespace not found",
     "skillList": "Skills",
     "emptyTitle": "No skills",
-    "emptyDescription": "No skills have been published in this namespace yet"
+    "emptyDescription": "No skills have been published in this namespace yet",
+    "delete": {
+      "button": "Delete",
+      "confirm": {
+        "title": "Delete namespace",
+        "description": "\"{{name}}\" will be permanently deleted. This action cannot be undone. Please provide a reason for deletion."
+      },
+      "reason": {
+        "label": "Deletion reason",
+        "placeholder": "Please explain why this namespace needs to be deleted..."
+      },
+      "success": {
+        "title": "Namespace deleted",
+        "description": "\"{{name}}\" has been permanently deleted."
+      },
+      "error": {
+        "title": "Failed to delete namespace"
+      }
+    }
   },
   "skillDetail": {
     "back": "Back",

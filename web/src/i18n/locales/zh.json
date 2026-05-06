@@ -428,24 +428,6 @@
     "unfreeze": "解冻",
     "archive": "归档",
     "restore": "恢复",
-    "delete": {
-      "button": "删除",
-      "confirm": {
-        "title": "删除命名空间",
-        "description": "\"{{name}}\"将被永久删除，此操作无法撤销。请提供删除原因。"
-      },
-      "reason": {
-        "label": "删除原因",
-        "placeholder": "请说明为什么需要删除此命名空间..."
-      },
-      "success": {
-        "title": "命名空间已删除",
-        "description": "\"{{name}}\"已被永久删除。"
-      },
-      "error": {
-        "title": "删除命名空间失败"
-      }
-    },
     "activeHint": "命名空间运行正常，可继续管理成员、处理审核和发布技能。",
     "frozenHint": "命名空间已冻结。成员仍可查看，但当前处于只读状态，不能继续发布或变更成员。",
     "archivedHint": "命名空间已归档。公开入口已隐藏，但你仍可在管理台查看并恢复。",
@@ -770,7 +752,25 @@
     "notFound": "命名空间不存在",
     "skillList": "技能列表",
     "emptyTitle": "暂无技能",
-    "emptyDescription": "该命名空间下还没有发布任何技能"
+    "emptyDescription": "该命名空间下还没有发布任何技能",
+    "delete": {
+      "button": "删除",
+      "confirm": {
+        "title": "删除命名空间",
+        "description": "\"{{name}}\"将被永久删除，此操作无法撤销。请提供删除原因。"
+      },
+      "reason": {
+        "label": "删除原因",
+        "placeholder": "请说明为什么需要删除此命名空间..."
+      },
+      "success": {
+        "title": "命名空间已删除",
+        "description": "\"{{name}}\"已被永久删除。"
+      },
+      "error": {
+        "title": "删除命名空间失败"
+      }
+    }
   },
   "skillDetail": {
     "back": "返回上一页",

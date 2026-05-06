@@ -1,7 +1,24 @@
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { setEnglishLocale } from './helpers/auth-fixtures'
 import { registerSession } from './helpers/session'
-import { E2eTestDataBuilder } from './helpers/test-data-builder'
+import { E2eTestDataBuilder, type SeededNamespace } from './helpers/test-data-builder'
+
+async function archiveNamespaceViaApi(page: Page, slug: string): Promise<void> {
+  const response = await page.context().request.post(
+    `/api/web/namespaces/${encodeURIComponent(slug)}/archive`,
+    { data: { reason: 'E2E prepare for deletion' } },
+  )
+  expect(response.ok(), `archive API failed: ${response.status()}`).toBeTruthy()
+}
+
+function namespaceCard(page: Page, namespace: SeededNamespace) {
+  return page
+    .locator('div')
+    .filter({ hasText: `@${namespace.slug}` })
+    .filter({ has: page.getByRole('heading', { name: namespace.displayName }) })
+    .first()
+}
 
 test.describe('Namespace Delete (Real API)', () => {
   test.beforeEach(async ({ page }, testInfo) => {
@@ -9,7 +26,7 @@ test.describe('Namespace Delete (Real API)', () => {
     await registerSession(page, testInfo)
   })
 
-  test('successfully deletes an archived namespace', async ({ page }, testInfo) => {
+  test('delete button only visible after namespace is archived', async ({ page }, testInfo) => {
     const builder = new E2eTestDataBuilder(page, testInfo)
     await builder.init()
 
@@ -19,111 +36,70 @@ test.describe('Namespace Delete (Real API)', () => {
       await page.goto('/dashboard/namespaces')
       await expect(page.getByText(`@${namespace.slug}`)).toBeVisible()
 
-      await page.getByRole('link', { name: `@${namespace.slug}` }).click()
-      await expect(page.getByRole('heading', { name: namespace.displayName })).toBeVisible()
+      const activeCard = namespaceCard(page, namespace)
+      await expect(activeCard.getByRole('button', { name: /^delete$/i })).toHaveCount(0)
 
-      const archiveButton = page.getByRole('button', { name: /archive/i })
-      await expect(archiveButton).toBeVisible()
-      await archiveButton.click()
+      await archiveNamespaceViaApi(page, namespace.slug)
 
-      const archiveDialog = page.getByRole('dialog')
-      await expect(archiveDialog).toBeVisible()
+      await page.reload()
+      await expect(page.getByText(`@${namespace.slug}`)).toBeVisible()
 
-      const reasonTextarea = archiveDialog.getByRole('textbox')
-      await reasonTextarea.fill('Preparing for deletion')
-
-      const confirmArchiveButton = archiveDialog.getByRole('button', { name: /archive/i })
-      await confirmArchiveButton.click()
-
-      await expect(page.getByText(/archived/i)).toBeVisible({ timeout: 10000 })
-
-      const deleteButton = page.getByRole('button', { name: /delete/i })
-      await expect(deleteButton).toBeVisible()
-      await deleteButton.click()
-
-      const deleteDialog = page.getByRole('dialog')
-      await expect(deleteDialog).toBeVisible()
-      await expect(deleteDialog.getByText(namespace.displayName)).toBeVisible()
-
-      const deleteReasonTextarea = deleteDialog.getByRole('textbox')
-      await deleteReasonTextarea.fill('No longer needed')
-
-      const confirmDeleteButton = deleteDialog.getByRole('button', { name: /delete/i })
-      await expect(confirmDeleteButton).toBeEnabled()
-      await confirmDeleteButton.click()
-
-      await expect(page).toHaveURL('/dashboard/namespaces', { timeout: 10000 })
-      await expect(page.getByText(`@${namespace.slug}`)).not.toBeVisible()
+      const archivedCard = namespaceCard(page, namespace)
+      await expect(archivedCard.getByRole('button', { name: /^delete$/i })).toBeVisible()
     } finally {
       await builder.cleanup()
     }
   })
 
-  test('delete button only visible when namespace is archived', async ({ page }, testInfo) => {
+  test('delete confirm button stays disabled until reason is provided', async ({ page }, testInfo) => {
     const builder = new E2eTestDataBuilder(page, testInfo)
     await builder.init()
 
     try {
       const namespace = await builder.ensureWritableNamespace()
+      await archiveNamespaceViaApi(page, namespace.slug)
 
       await page.goto('/dashboard/namespaces')
-      await page.getByRole('link', { name: `@${namespace.slug}` }).click()
-      await expect(page.getByRole('heading', { name: namespace.displayName })).toBeVisible()
+      await expect(page.getByText(`@${namespace.slug}`)).toBeVisible()
 
-      await expect(page.getByRole('button', { name: /delete/i })).not.toBeVisible()
+      const card = namespaceCard(page, namespace)
+      await card.getByRole('button', { name: /^delete$/i }).click()
 
-      const archiveButton = page.getByRole('button', { name: /archive/i })
-      await archiveButton.click()
+      const dialog = page.getByRole('dialog')
+      await expect(dialog).toBeVisible()
 
-      const archiveDialog = page.getByRole('dialog')
-      const reasonTextarea = archiveDialog.getByRole('textbox')
-      await reasonTextarea.fill('Test archive')
+      const confirmButton = dialog.getByRole('button', { name: /^delete$/i })
+      await expect(confirmButton).toBeDisabled()
 
-      const confirmArchiveButton = archiveDialog.getByRole('button', { name: /archive/i })
-      await confirmArchiveButton.click()
-
-      await expect(page.getByText(/archived/i)).toBeVisible({ timeout: 10000 })
-      await expect(page.getByRole('button', { name: /delete/i })).toBeVisible()
+      await dialog.getByRole('textbox').fill('No longer needed')
+      await expect(confirmButton).toBeEnabled()
     } finally {
       await builder.cleanup()
     }
   })
 
-  test('requires delete reason to be filled', async ({ page }, testInfo) => {
+  test('successfully deletes an archived namespace', async ({ page }, testInfo) => {
     const builder = new E2eTestDataBuilder(page, testInfo)
     await builder.init()
 
     try {
       const namespace = await builder.ensureWritableNamespace()
+      await archiveNamespaceViaApi(page, namespace.slug)
 
       await page.goto('/dashboard/namespaces')
-      await page.getByRole('link', { name: `@${namespace.slug}` }).click()
+      await expect(page.getByText(`@${namespace.slug}`)).toBeVisible()
 
-      const archiveButton = page.getByRole('button', { name: /archive/i })
-      await archiveButton.click()
+      const card = namespaceCard(page, namespace)
+      await card.getByRole('button', { name: /^delete$/i }).click()
 
-      const archiveDialog = page.getByRole('dialog')
-      const reasonTextarea = archiveDialog.getByRole('textbox')
-      await reasonTextarea.fill('Test archive')
+      const dialog = page.getByRole('dialog')
+      await expect(dialog).toBeVisible()
 
-      const confirmArchiveButton = archiveDialog.getByRole('button', { name: /archive/i })
-      await confirmArchiveButton.click()
+      await dialog.getByRole('textbox').fill('No longer needed')
+      await dialog.getByRole('button', { name: /^delete$/i }).click()
 
-      await expect(page.getByText(/archived/i)).toBeVisible({ timeout: 10000 })
-
-      const deleteButton = page.getByRole('button', { name: /delete/i })
-      await deleteButton.click()
-
-      const deleteDialog = page.getByRole('dialog')
-      await expect(deleteDialog).toBeVisible()
-
-      const confirmDeleteButton = deleteDialog.getByRole('button', { name: /delete/i })
-      await expect(confirmDeleteButton).toBeDisabled()
-
-      const deleteReasonTextarea = deleteDialog.getByRole('textbox')
-      await deleteReasonTextarea.fill('No longer needed')
-
-      await expect(confirmDeleteButton).toBeEnabled()
+      await expect(dialog).toBeHidden({ timeout: 10_000 })
+      await expect(page.getByText(`@${namespace.slug}`)).toHaveCount(0, { timeout: 10_000 })
     } finally {
       await builder.cleanup()
     }

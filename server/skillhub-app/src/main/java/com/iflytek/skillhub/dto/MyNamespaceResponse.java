@@ -24,7 +24,8 @@ public record MyNamespaceResponse(
         boolean canFreeze,
         boolean canUnfreeze,
         boolean canArchive,
-        boolean canRestore
+        boolean canRestore,
+        boolean canDelete
 ) {
     public static MyNamespaceResponse from(Namespace namespace,
                                            NamespaceRole currentUserRole,
@@ -45,7 +46,8 @@ public record MyNamespaceResponse(
                 accessPolicy.canFreeze(namespace, currentUserRole),
                 accessPolicy.canUnfreeze(namespace, currentUserRole),
                 accessPolicy.canArchive(namespace, currentUserRole),
-                accessPolicy.canRestore(namespace, currentUserRole)
+                accessPolicy.canRestore(namespace, currentUserRole),
+                accessPolicy.canDelete(namespace, currentUserRole)
         );
     }
 }

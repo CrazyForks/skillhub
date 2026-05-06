@@ -270,7 +270,7 @@ export interface paths {
         get: operations["getNamespace"];
         put: operations["updateNamespace"];
         post?: never;
-        delete?: never;
+        delete: operations["deleteNamespace"];
         options?: never;
         head?: never;
         patch?: never;
@@ -286,7 +286,7 @@ export interface paths {
         get: operations["getNamespace_1"];
         put: operations["updateNamespace_1"];
         post?: never;
-        delete?: never;
+        delete: operations["deleteNamespace_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3210,7 +3210,7 @@ export interface components {
             slug?: string;
             displayName?: string;
             /** @enum {string} */
-            status?: "ACTIVE" | "FROZEN" | "ARCHIVED";
+            status?: "ACTIVE" | "FROZEN" | "ARCHIVED" | "DELETED";
             description?: string;
             /** @enum {string} */
             type?: "GLOBAL" | "TEAM";
@@ -4166,7 +4166,7 @@ export interface components {
             slug?: string;
             displayName?: string;
             /** @enum {string} */
-            status?: "ACTIVE" | "FROZEN" | "ARCHIVED";
+            status?: "ACTIVE" | "FROZEN" | "ARCHIVED" | "DELETED";
             description?: string;
             /** @enum {string} */
             type?: "GLOBAL" | "TEAM";
@@ -5351,6 +5351,32 @@ export interface operations {
             };
         };
     };
+    deleteNamespace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NamespaceLifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMessageResponse"];
+                };
+            };
+        };
+    };
     getNamespace_1: {
         parameters: {
             query?: never;
@@ -5395,6 +5421,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseNamespaceResponse"];
+                };
+            };
+        };
+    };
+    deleteNamespace_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NamespaceLifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMessageResponse"];
                 };
             };
         };

@@ -186,3 +186,14 @@ export function useRestoreNamespace() {
     },
   })
 }
+
+export function useDeleteNamespace() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ slug, reason }: { slug: string; reason: string }) => namespaceApi.delete(slug, reason),
+    onSuccess: (_data, variables) => {
+      invalidateNamespaceQueries(queryClient, variables.slug)
+    },
+  })
+}

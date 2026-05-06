@@ -9,14 +9,20 @@ import { EmptyState } from '@/shared/components/empty-state'
 import { ConfirmDialog } from '@/shared/components/confirm-dialog'
 import { DashboardPageHeader } from '@/shared/components/dashboard-page-header'
 import { CreateNamespaceDialog } from '@/features/namespace/create-namespace-dialog'
-import { useArchiveNamespace, useFreezeNamespace, useMyNamespaces, useRestoreNamespace, useUnfreezeNamespace } from '@/shared/hooks/use-namespace-queries'
+import { useArchiveNamespace, useDeleteNamespace, useFreezeNamespace, useMyNamespaces, useRestoreNamespace, useUnfreezeNamespace } from '@/shared/hooks/use-namespace-queries'
 import { toast } from '@/shared/lib/toast'
+import { DeleteNamespaceDialog } from '@/features/namespace/delete-namespace-dialog'
 
 type PendingNamespaceAction =
   | { action: 'freeze'; slug: string; name: string }
   | { action: 'unfreeze'; slug: string; name: string }
   | { action: 'archive'; slug: string; name: string }
   | { action: 'restore'; slug: string; name: string }
+
+type PendingDeleteAction = {
+  slug: string
+  name: string
+}
 
 /**
  * Dashboard page for namespaces the current user can manage or review. It owns
@@ -29,11 +35,13 @@ export function MyNamespacesPage() {
   const { hasRole } = useAuth()
   const canCreateNamespace = hasRole('SKILL_ADMIN') || hasRole('SUPER_ADMIN')
   const [pendingAction, setPendingAction] = useState<PendingNamespaceAction | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<PendingDeleteAction | null>(null)
   const { data: namespaces, isLoading } = useMyNamespaces()
   const freezeMutation = useFreezeNamespace()
   const unfreezeMutation = useUnfreezeNamespace()
   const archiveMutation = useArchiveNamespace()
   const restoreMutation = useRestoreNamespace()
+  const deleteMutation = useDeleteNamespace()
 
   const handleNamespaceClick = (slug: string) => {
     navigate({ to: `/space/${encodeURIComponent(slug)}` })
@@ -153,6 +161,28 @@ export function MyNamespacesPage() {
       setPendingAction(null)
     } catch (error) {
       toast.error(copy.errorTitle, error instanceof Error ? error.message : '')
+      throw error
+    }
+  }
+
+  const handleDeleteNamespace = async (reason: string) => {
+    if (!pendingDelete) {
+      return
+    }
+
+    try {
+      await deleteMutation.mutateAsync({ slug: pendingDelete.slug, reason })
+      toast.success(
+        t('namespace.delete.success.title'),
+        t('namespace.delete.success.description', { name: pendingDelete.name }),
+      )
+      setPendingDelete(null)
+      navigate({ to: '/dashboard/namespaces' })
+    } catch (error) {
+      toast.error(
+        t('namespace.delete.error.title'),
+        error instanceof Error ? error.message : '',
+      )
       throw error
     }
   }
@@ -281,6 +311,18 @@ export function MyNamespacesPage() {
                       {t('myNamespaces.restore')}
                     </Button>
                   )}
+                  {namespace.canDelete && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPendingDelete({ slug: namespace.slug, name: namespace.displayName })
+                      }}
+                    >
+                      {t('namespace.delete.button')}
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -310,6 +352,17 @@ export function MyNamespacesPage() {
         confirmText={pendingAction ? resolveActionCopy(pendingAction.action, pendingAction.name).confirmText : undefined}
         variant={pendingAction ? resolveActionCopy(pendingAction.action, pendingAction.name).variant : 'default'}
         onConfirm={handleNamespaceAction}
+      />
+
+      <DeleteNamespaceDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDelete(null)
+          }
+        }}
+        namespaceName={pendingDelete?.name ?? ''}
+        onConfirm={handleDeleteNamespace}
       />
     </div>
   )

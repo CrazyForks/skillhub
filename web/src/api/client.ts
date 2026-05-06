@@ -732,6 +732,16 @@ export const namespaceApi = {
       headers: await ensureCsrfHeaders(),
     })
   },
+
+  async delete(slug: string, reason: string): Promise<void> {
+    await fetchJson<void>(`${WEB_API_PREFIX}/namespaces/${normalizeNamespaceSlug(slug)}`, {
+      method: 'DELETE',
+      headers: await ensureCsrfHeaders({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({ reason: reason.trim() }),
+    })
+  },
 }
 
 export const tokenApi = {

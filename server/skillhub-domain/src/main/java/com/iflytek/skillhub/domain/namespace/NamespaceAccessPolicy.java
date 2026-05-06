@@ -49,4 +49,10 @@ public class NamespaceAccessPolicy {
                 && namespace.getStatus() == NamespaceStatus.ARCHIVED
                 && role == NamespaceRole.OWNER;
     }
+
+    public boolean canDelete(Namespace namespace, NamespaceRole role) {
+        return namespace.getType() == NamespaceType.TEAM
+                && namespace.getStatus() == NamespaceStatus.ARCHIVED
+                && role == NamespaceRole.OWNER;
+    }
 }

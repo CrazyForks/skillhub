@@ -3,12 +3,14 @@ package com.iflytek.skillhub.domain.namespace;
 import com.iflytek.skillhub.domain.audit.AuditLogService;
 import com.iflytek.skillhub.domain.shared.exception.DomainBadRequestException;
 import com.iflytek.skillhub.domain.shared.exception.DomainForbiddenException;
+import com.iflytek.skillhub.domain.skill.SkillRepository;
+import com.iflytek.skillhub.domain.skill.SkillStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Applies namespace lifecycle transitions such as freeze, unfreeze, archive,
- * and restore while recording audit history.
+ * restore, and delete while recording audit history.
  */
 @Service
 public class NamespaceGovernanceService {
@@ -17,15 +19,18 @@ public class NamespaceGovernanceService {
     private final NamespaceMemberRepository namespaceMemberRepository;
     private final NamespaceAccessPolicy namespaceAccessPolicy;
     private final AuditLogService auditLogService;
+    private final SkillRepository skillRepository;
 
     public NamespaceGovernanceService(NamespaceRepository namespaceRepository,
                                       NamespaceMemberRepository namespaceMemberRepository,
                                       NamespaceAccessPolicy namespaceAccessPolicy,
-                                      AuditLogService auditLogService) {
+                                      AuditLogService auditLogService,
+                                      SkillRepository skillRepository) {
         this.namespaceRepository = namespaceRepository;
         this.namespaceMemberRepository = namespaceMemberRepository;
         this.namespaceAccessPolicy = namespaceAccessPolicy;
         this.auditLogService = auditLogService;
+        this.skillRepository = skillRepository;
     }
 
     @Transactional
@@ -108,6 +113,35 @@ public class NamespaceGovernanceService {
         Namespace updated = namespaceRepository.save(namespace);
         record("RESTORE_NAMESPACE", actorUserId, updated.getId(), requestId, clientIp, userAgent, null);
         return updated;
+    }
+
+    @Transactional
+    public void deleteNamespace(String slug,
+                                String actorUserId,
+                                String reason,
+                                String requestId,
+                                String clientIp,
+                                String userAgent) {
+        Namespace namespace = loadNamespaceBySlug(slug);
+        NamespaceRole role = requireRole(namespace.getId(), actorUserId);
+
+        if (namespace.getStatus() != NamespaceStatus.ARCHIVED) {
+            throw new DomainBadRequestException("error.namespace.delete.mustBeArchived", namespace.getSlug());
+        }
+
+        if (!namespaceAccessPolicy.canDelete(namespace, role)) {
+            throw new DomainForbiddenException("error.namespace.lifecycle.forbidden", namespace.getSlug());
+        }
+
+        // Check if namespace has any active skills
+        long activeSkillCount = skillRepository.findByNamespaceIdAndStatus(namespace.getId(), SkillStatus.ACTIVE).size();
+        if (activeSkillCount > 0) {
+            throw new DomainBadRequestException("error.namespace.delete.hasActiveSkills", namespace.getSlug());
+        }
+
+        namespace.setStatus(NamespaceStatus.DELETED);
+        namespaceRepository.save(namespace);
+        record("DELETE_NAMESPACE", actorUserId, namespace.getId(), requestId, clientIp, userAgent, reason);
     }
 
     private Namespace loadNamespaceBySlug(String slug) {

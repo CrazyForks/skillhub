@@ -139,6 +139,22 @@ public class NamespacePortalCommandAppService {
     }
 
     @Transactional
+    public MessageResponse deleteNamespace(String slug,
+                                          NamespaceLifecycleRequest request,
+                                          String userId,
+                                          AuditRequestContext auditContext) {
+        namespaceGovernanceService.deleteNamespace(
+                slug,
+                userId,
+                request != null ? request.reason() : null,
+                null,
+                auditContext.clientIp(),
+                auditContext.userAgent()
+        );
+        return new MessageResponse("Namespace deleted successfully");
+    }
+
+    @Transactional
     public MemberResponse addMember(String slug, String memberUserId, com.iflytek.skillhub.domain.namespace.NamespaceRole role, String operatorUserId) {
         Namespace namespace = namespaceService.getNamespaceBySlug(slug);
         NamespaceMember member = namespaceMemberService.addMember(

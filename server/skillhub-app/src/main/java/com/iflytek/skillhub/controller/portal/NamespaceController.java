@@ -143,6 +143,19 @@ public class NamespaceController extends BaseApiController {
                         AuditRequestContext.from(httpRequest)));
     }
 
+    @DeleteMapping("/namespaces/{slug}")
+    public ApiResponse<MessageResponse> deleteNamespace(@PathVariable String slug,
+                                                        @RequestBody(required = false) NamespaceLifecycleRequest request,
+                                                        @RequestAttribute("userId") String userId,
+                                                        HttpServletRequest httpRequest) {
+        return ok("response.success.deleted",
+                governanceWorkflowAppService.deleteNamespace(
+                        slug,
+                        request,
+                        userId,
+                        AuditRequestContext.from(httpRequest)));
+    }
+
     @GetMapping("/namespaces/{slug}/members")
     public ApiResponse<PageResponse<MemberResponse>> listMembers(@PathVariable String slug,
                                                                  Pageable pageable,

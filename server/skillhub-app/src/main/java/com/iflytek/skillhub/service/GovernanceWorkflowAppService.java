@@ -255,6 +255,13 @@ public class GovernanceWorkflowAppService {
         return namespacePortalCommandAppService.restoreNamespace(slug, userId, auditContext);
     }
 
+    public com.iflytek.skillhub.dto.MessageResponse deleteNamespace(String slug,
+                                                                    NamespaceLifecycleRequest request,
+                                                                    String userId,
+                                                                    AuditRequestContext auditContext) {
+        return namespacePortalCommandAppService.deleteNamespace(slug, request, userId, auditContext);
+    }
+
     public SkillLifecycleMutationResponse submitForReview(String namespace,
                                                            String slug,
                                                            String version,

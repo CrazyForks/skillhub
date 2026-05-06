@@ -19,11 +19,7 @@ async function archiveNamespaceViaApi(page: Page, slug: string): Promise<void> {
 }
 
 function namespaceCard(page: Page, namespace: SeededNamespace) {
-  return page
-    .locator('div')
-    .filter({ hasText: `@${namespace.slug}` })
-    .filter({ has: page.getByRole('heading', { name: namespace.displayName }) })
-    .first()
+  return page.getByTestId(`namespace-card-${namespace.slug}`)
 }
 
 // Namespace lifecycle ties archive and delete to the OWNER role, and only

@@ -214,6 +214,7 @@ export function MyNamespacesPage() {
           {namespaces.map((namespace, idx) => (
             <Card
               key={namespace.id}
+              data-testid={`namespace-card-${namespace.slug}`}
               className={`p-6 cursor-pointer group animate-fade-up delay-${Math.min(idx + 1, 6)}`}
               onClick={() => handleNamespaceClick(namespace.slug)}
             >

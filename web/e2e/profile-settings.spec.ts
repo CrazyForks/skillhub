@@ -12,10 +12,8 @@ test.describe('Profile Settings (Real API)', () => {
     await page.goto('/settings/profile')
 
     await expect(page.getByRole('heading', { name: 'Profile Settings' })).toBeVisible()
-    await expect(page.getByText('User ID')).toBeVisible()
-
-    const hasDisplayName = await page.getByText(/Display Name/i).first().isVisible().catch(() => false)
-    expect(hasDisplayName).toBeTruthy()
+    await expect(page.getByText('Display Name')).toBeVisible()
+    await expect(page.getByText('Email')).toBeVisible()
   })
 
   test('TC_PROFILE_002: edit button toggles to save and cancel', async ({ page }) => {

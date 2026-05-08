@@ -26,8 +26,9 @@ test.describe('Admin Audit Log (Real API)', () => {
     await page.goto('/admin/audit-log')
 
     await expect(page.getByRole('button', { name: /Clear filters/i })).toBeVisible()
-    const hasTableText = await page.getByText(/Time|Action|User ID|No audit logs/i).first().isVisible().catch(() => false)
-    expect(hasTableText).toBeTruthy()
+    await expect(
+      page.getByRole('table').or(page.getByText(/No audit logs/i)).first()
+    ).toBeVisible({ timeout: 10_000 })
   })
 
   test('TC_AUDIT_004: action filter dropdown shows options', async ({ page }) => {

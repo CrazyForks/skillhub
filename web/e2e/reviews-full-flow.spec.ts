@@ -62,10 +62,10 @@ test.describe('Review Center Full Flow (Real API)', () => {
     if (meta.total === 0) {
       await expect(page.getByText('No review tasks')).toBeVisible()
     } else {
-      await expect(page.getByRole('columnheader', { name: 'Skill' })).toBeVisible()
-      await expect(page.getByRole('columnheader', { name: 'Version' })).toBeVisible()
-      await expect(page.getByRole('columnheader', { name: 'Submitted By' })).toBeVisible()
-      await expect(page.getByRole('columnheader', { name: 'Submitted At' })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: /^Skill$/i })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: /^Version$/i })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: /^Submitted By$/i })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: /^Submitted At$/i })).toBeVisible()
     }
   })
 
@@ -77,8 +77,8 @@ test.describe('Review Center Full Flow (Real API)', () => {
     if (meta.total === 0) {
       await expect(page.getByText('No review tasks')).toBeVisible()
     } else {
-      await expect(page.getByRole('columnheader', { name: 'Reviewed By' })).toBeVisible()
-      await expect(page.getByRole('columnheader', { name: 'Reviewed At' })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: /^Reviewed By$/i })).toBeVisible()
+      await expect(page.getByRole('columnheader', { name: /^Reviewed At$/i })).toBeVisible()
     }
   })
 

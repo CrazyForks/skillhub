@@ -74,14 +74,13 @@ cleanup_on_error() {
     on-release)
       echo "" >&2
       echo "[publish-cli] error before commit — rolling back release branch" >&2
-      git -C "$REPO_ROOT" checkout -- "$PACKAGE_JSON" "$CLI_DIR/src/generated/pkg-info.ts" 2>/dev/null
-      git -C "$REPO_ROOT" checkout "$ORIGINAL_BRANCH" 2>/dev/null
+      git -C "$REPO_ROOT" checkout -f "$ORIGINAL_BRANCH" 2>/dev/null
       git -C "$REPO_ROOT" branch -D "$RELEASE_BRANCH" 2>/dev/null
       ;;
     committed)
       echo "" >&2
       echo "[publish-cli] error after commit but before push — rolling back local branch" >&2
-      git -C "$REPO_ROOT" checkout "$ORIGINAL_BRANCH" 2>/dev/null
+      git -C "$REPO_ROOT" checkout -f "$ORIGINAL_BRANCH" 2>/dev/null
       git -C "$REPO_ROOT" branch -D "$RELEASE_BRANCH" 2>/dev/null
       ;;
     pushed)

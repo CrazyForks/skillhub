@@ -142,17 +142,17 @@ if [[ -n "$LATEST_TAG" ]]; then
   BASE_VERSION="${LATEST_TAG#cli-v}"
   log_stage "baseline: $BASE_VERSION (from $LATEST_TAG)"
 else
-  BASE_VERSION="$(node -p "require('$PACKAGE_JSON').version")"
+  BASE_VERSION="$(PACKAGE_JSON="$PACKAGE_JSON" node -p "require(process.env.PACKAGE_JSON).version")"
   log_stage "no cli-v* tags found, baseline: $BASE_VERSION (from package.json)"
 fi
 
-NEW_VERSION="$(node -e "
-  const v = '$BASE_VERSION'.split('.').map(Number);
+NEW_VERSION="$(BASE_VERSION="$BASE_VERSION" BUMP_TYPE="$BUMP_TYPE" node -e "
+  const v = process.env.BASE_VERSION.split('.').map(Number);
   if (v.length !== 3 || v.some(Number.isNaN)) {
-    console.error('invalid baseline version: $BASE_VERSION');
+    console.error('invalid baseline version: ' + process.env.BASE_VERSION);
     process.exit(1);
   }
-  const t = '$BUMP_TYPE';
+  const t = process.env.BUMP_TYPE;
   if (t === 'patch') v[2]++;
   else if (t === 'minor') { v[1]++; v[2] = 0; }
   else if (t === 'major') { v[0]++; v[1] = 0; v[2] = 0; }
@@ -225,11 +225,11 @@ git -C "$REPO_ROOT" checkout -b "$RELEASE_BRANCH"
 CLEANUP_STAGE="on-release"
 
 log_stage "writing version $NEW_VERSION to package.json"
-node -e "
+NEW_VERSION="$NEW_VERSION" PACKAGE_JSON="$PACKAGE_JSON" node -e "
   const fs = require('fs');
-  const pkg = JSON.parse(fs.readFileSync('$PACKAGE_JSON', 'utf8'));
-  pkg.version = '$NEW_VERSION';
-  fs.writeFileSync('$PACKAGE_JSON', JSON.stringify(pkg, null, 2) + '\n');
+  const pkg = JSON.parse(fs.readFileSync(process.env.PACKAGE_JSON, 'utf8'));
+  pkg.version = process.env.NEW_VERSION;
+  fs.writeFileSync(process.env.PACKAGE_JSON, JSON.stringify(pkg, null, 2) + '\n');
 "
 
 log_stage "regenerating pkg-info.ts with new version"

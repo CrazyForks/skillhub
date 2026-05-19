@@ -53,6 +53,28 @@ class SkillPackageValidatorTest {
     }
 
     @Test
+    void acceptsLowercaseSkillMdAsCanonical() {
+        // Users sometimes pack their archive with a lowercase skill.md (common on
+        // case-insensitive filesystems). Validation must treat it as the canonical entry.
+        String skillMdContent = """
+            ---
+            name: test-skill
+            description: A test skill
+            version: 1.0.0
+            ---
+            Body
+            """;
+
+        List<PackageEntry> entries = List.of(
+            new PackageEntry("skill.md", skillMdContent.getBytes(), skillMdContent.length(), "text/markdown")
+        );
+
+        ValidationResult result = validator.validate(entries);
+
+        assertTrue(result.passed(), "lowercase skill.md should validate; errors=" + result.errors());
+    }
+
+    @Test
     void testDisallowedExtension() {
         String skillMdContent = """
             ---

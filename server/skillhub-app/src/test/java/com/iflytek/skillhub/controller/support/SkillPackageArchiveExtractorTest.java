@@ -266,6 +266,56 @@ class SkillPackageArchiveExtractorTest {
         assertTrue(result.warnings().isEmpty());
     }
 
+    @Test
+    void canonicalizesLowercaseSkillMdAtRoot() throws Exception {
+        // Regression: a zip with lowercase skill.md at the package root should be
+        // accepted and canonicalized to SKILL.md so downstream validation matches.
+        byte[] zipBytes = createZip(Map.of(
+                "skill.md", "---\nname: test\n---\n".getBytes(),
+                "README.md", "# readme".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        List<PackageEntry> entries = extractor.extract(file);
+
+        assertTrue(entries.stream().anyMatch(e -> e.path().equals("SKILL.md")),
+                "Expected lowercase skill.md to be canonicalized to SKILL.md");
+        assertTrue(entries.stream().noneMatch(e -> e.path().equals("skill.md")));
+    }
+
+    @Test
+    void canonicalizesMixedCaseSkillMdInSingleRootDirectory() throws Exception {
+        // my-skill/Skill.MD → root prefix stripped, basename canonicalized to SKILL.md
+        byte[] zipBytes = createZip(Map.of(
+                "my-skill/Skill.MD", "---\nname: test\n---\n".getBytes(),
+                "my-skill/config.json", "{}".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        List<PackageEntry> entries = extractor.extract(file);
+
+        assertTrue(entries.stream().anyMatch(e -> e.path().equals("SKILL.md")));
+        assertTrue(entries.stream().anyMatch(e -> e.path().equals("config.json")));
+    }
+
+    @Test
+    void promotesSubdirectoryWhenSkillMdIsLowercase() throws Exception {
+        // Mixed-root zip: skill.md lives in a single subdirectory and must still be
+        // promoted by extractWithWarnings, with files outside that dir warned.
+        byte[] zipBytes = createZip(Map.of(
+                "my-skill/skill.md", "---\nname: test\n---\n".getBytes(),
+                "my-skill/README.md", "# readme".getBytes(),
+                "stray.txt", "outside".getBytes()
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "test.zip", "application/zip", zipBytes);
+
+        SkillPackageArchiveExtractor.ExtractionResult result = extractor.extractWithWarnings(file);
+
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("SKILL.md")));
+        assertTrue(result.entries().stream().anyMatch(e -> e.path().equals("README.md")));
+        assertTrue(result.warnings().stream().anyMatch(w -> w.contains("stray.txt")));
+    }
+
     private byte[] createZip(String entryName, String content) throws Exception {
         return createZip(entryName, content.getBytes(StandardCharsets.UTF_8));
     }

@@ -64,7 +64,25 @@ public final class SkillPackagePolicy {
             throw new IllegalArgumentException("Package entry path must be normalized: " + rawPath);
         }
 
-        return canonical;
+        return canonicalizeSkillMdFilename(canonical);
+    }
+
+    /**
+     * Folds any case variant of the SKILL.md filename ({@code skill.md}, {@code Skill.MD}, ...) to
+     * the canonical {@link #SKILL_MD_PATH}. The OpenSkills protocol specifies SKILL.md uppercase as
+     * the entry-point filename; users packaging on case-insensitive filesystems (macOS, Windows)
+     * frequently submit a lowercase variant. Canonicalizing here lets every downstream {@code
+     * .equals(SKILL_MD_PATH)} check succeed without forcing each call site to do case-insensitive
+     * comparisons.
+     */
+    static String canonicalizeSkillMdFilename(String normalizedPath) {
+        int slashIndex = normalizedPath.lastIndexOf('/');
+        String basename = (slashIndex < 0) ? normalizedPath : normalizedPath.substring(slashIndex + 1);
+        if (basename.equals(SKILL_MD_PATH) || !basename.equalsIgnoreCase(SKILL_MD_PATH)) {
+            return normalizedPath;
+        }
+        String prefix = (slashIndex < 0) ? "" : normalizedPath.substring(0, slashIndex + 1);
+        return prefix + SKILL_MD_PATH;
     }
 
     public static boolean hasAllowedExtension(String path) {

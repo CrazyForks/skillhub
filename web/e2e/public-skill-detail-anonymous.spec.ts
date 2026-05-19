@@ -40,7 +40,15 @@ test.describe('Public Skill Detail Anonymous Access (Real API)', () => {
     await expect(page).not.toHaveURL(/\/login\?returnTo=/)
     await expect(page.getByRole('heading', { name: current.skillName, exact: true })).toBeVisible()
     await expect(page.getByText('Install', { exact: true })).toBeVisible()
-    await expect(page.getByText(new RegExp(`npx clawhub install ${current.skill.slug}`))).toBeVisible()
+
+    await expect(
+      page.getByText(new RegExp(`skillhub install ${current.skill.namespace}/${current.skill.slug}`)),
+    ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Copy' }).first()).toBeVisible()
+
+    await page.getByRole('tab', { name: 'ClawHub' }).click()
+    await expect(
+      page.getByText(new RegExp(`npx clawhub install ${current.skill.namespace}--${current.skill.slug}`)),
+    ).toBeVisible()
   })
 })

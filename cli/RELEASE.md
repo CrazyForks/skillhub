@@ -77,10 +77,12 @@ Review and merge the PR on GitHub as usual.
 After the PR is merged:
 
 ```bash
-git pull origin main
-git tag cli-vX.Y.Z       # replace with the actual version
+git fetch origin main
+git tag cli-vX.Y.Z origin/main   # replace with the actual version
 git push origin cli-vX.Y.Z
 ```
+
+This ensures the tag is always placed on the merge commit on `origin/main`, regardless of your local branch state.
 
 Pushing the tag triggers CI which builds, publishes to npm, and creates a GitHub Release.
 

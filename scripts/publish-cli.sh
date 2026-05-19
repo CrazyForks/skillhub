@@ -140,6 +140,13 @@ log_stage "computing next version from latest cli-v* tag"
 LATEST_TAG="$(git -C "$REPO_ROOT" tag --list 'cli-v*' --sort=-version:refname | head -n1)"
 if [[ -n "$LATEST_TAG" ]]; then
   BASE_VERSION="${LATEST_TAG#cli-v}"
+  # Reject prerelease tags (e.g., cli-v0.2.0-rc.1). Only pure X.Y.Z is supported.
+  if [[ "$BASE_VERSION" =~ [^0-9.] ]]; then
+    echo "latest tag $LATEST_TAG contains prerelease suffix: $BASE_VERSION" >&2
+    echo "this script only supports pure X.Y.Z versions" >&2
+    echo "skip prerelease tags manually or use a different baseline" >&2
+    exit 1
+  fi
   log_stage "baseline: $BASE_VERSION (from $LATEST_TAG)"
 else
   BASE_VERSION="$(PACKAGE_JSON="$PACKAGE_JSON" node -p "require(process.env.PACKAGE_JSON).version")"
@@ -251,8 +258,10 @@ Local build-and-test passed (lint, typecheck, test, build).
 
 After merging, tag and push to trigger the release:
 \`\`\`bash
-git pull origin main
-git tag $TAG
+git fetch origin main
+git checkout main
+git merge --ff-only origin/main
+git tag $TAG origin/main
 git push origin $TAG
 \`\`\`
 
@@ -271,7 +280,7 @@ git -C "$REPO_ROOT" branch -D "$RELEASE_BRANCH"
 
 log_stage "done — PR opened. After merge, tag manually:"
 echo ""
-echo "  git pull origin main"
-echo "  git tag $TAG"
+echo "  git fetch origin main"
+echo "  git tag $TAG origin/main"
 echo "  git push origin $TAG"
 echo ""

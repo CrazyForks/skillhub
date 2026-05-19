@@ -411,4 +411,17 @@ if [[ -f "$REPO10/gh-stub.log" ]] && grep -F "pr create" "$REPO10/gh-stub.log" >
   fail "gh pr create ran despite push failure"
 fi
 
+# ----------------------------------------------------------------------------
+# Test 11: prerelease tag → abort with clear message
+# ----------------------------------------------------------------------------
+echo "[test] prerelease tag aborts with message"
+REPO11="$(new_tmp)"
+init_repo "$REPO11" "0.1.0" "cli-v0.2.0-rc.1"
+status="$(run_publish "$REPO11" "patch")"
+[[ "$status" -ne 0 ]] || fail "expected non-zero exit for prerelease tag"
+grep -F "contains prerelease suffix" "$REPO11/stderr.log" >/dev/null \
+  || { cat "$REPO11/stderr.log" >&2; fail "expected prerelease rejection message"; }
+grep -F "only supports pure X.Y.Z" "$REPO11/stderr.log" >/dev/null \
+  || fail "expected X.Y.Z hint in error"
+
 echo "all tests passed"

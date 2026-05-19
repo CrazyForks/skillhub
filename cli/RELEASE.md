@@ -5,7 +5,7 @@
 CLI releases use a PR-based flow. Running `make publish-cli` on a clean `main` branch:
 
 1. Runs local build-and-test (lint, typecheck, test, build)
-2. Computes the next version from the latest `cli-v*` tag
+2. Computes the next version from the latest `cli-v*` tag on `origin`
 3. Creates a `release/cli-vX.Y.Z` branch with the version bump committed
 4. Pushes the branch and opens a PR to `main`
 
@@ -64,7 +64,7 @@ make publish-cli-major   # major: 0.1.5 -> 1.0.0
 2. Verify the working tree is clean and on `main`
 3. `git pull --ff-only` from `origin/main`
 4. Run full local build-and-test (lint, typecheck, test, build)
-5. Compute the next version from the latest `cli-v*` tag
+5. Compute the next version from the latest `cli-v*` tag on `origin` (via `git ls-remote`, so local orphan tags from a failed `git push origin cli-vX.Y.Z` are ignored)
 6. Verify the tag and release branch don't already exist
 7. After interactive confirmation: create release branch, commit version bump, push, and open PR
 

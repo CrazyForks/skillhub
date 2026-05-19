@@ -342,7 +342,7 @@ REPO8="$(new_tmp)"
 init_repo "$REPO8" "0.1.0" "cli-v0.2.0"
 status="$(run_publish "$REPO8" "patch" $'y\n')"
 [[ "$status" -eq 0 ]] || { cat "$REPO8/stderr.log" >&2; fail "expected success, got $status"; }
-grep -F "baseline: 0.2.0 (from cli-v0.2.0)" "$REPO8/stdout.log" >/dev/null \
+grep -F "baseline: 0.2.0 (from origin cli-v0.2.0)" "$REPO8/stdout.log" >/dev/null \
   || fail "baseline log missing — version computed from wrong source"
 git -C "$REPO8.origin.git" rev-parse "refs/heads/release/cli-v0.2.1" >/dev/null \
   || fail "expected branch release/cli-v0.2.1 on origin"
@@ -423,5 +423,22 @@ grep -F "contains prerelease suffix" "$REPO11/stderr.log" >/dev/null \
   || { cat "$REPO11/stderr.log" >&2; fail "expected prerelease rejection message"; }
 grep -F "only supports pure X.Y.Z" "$REPO11/stderr.log" >/dev/null \
   || fail "expected X.Y.Z hint in error"
+
+# ----------------------------------------------------------------------------
+# Test 12: local-only orphan tag must not influence baseline
+# ----------------------------------------------------------------------------
+# Simulates the failure mode where `git push origin cli-vX.Y.Z` failed after
+# `git tag cli-vX.Y.Z origin/main` succeeded locally. The orphan tag exists
+# locally but not on origin. Baseline must come from origin only.
+echo "[test] local-only orphan tag ignored for baseline"
+REPO12="$(new_tmp)"
+init_repo "$REPO12" "0.1.0" "cli-v0.1.0"
+git -C "$REPO12" tag "cli-v0.3.0"
+status="$(run_publish "$REPO12" "patch" $'y\n')"
+[[ "$status" -eq 0 ]] || { cat "$REPO12/stderr.log" >&2; fail "expected success, got $status"; }
+grep -F "baseline: 0.1.0 (from origin cli-v0.1.0)" "$REPO12/stdout.log" >/dev/null \
+  || { cat "$REPO12/stdout.log" >&2; fail "baseline must come from origin (0.1.0), not local orphan (0.3.0)"; }
+git -C "$REPO12.origin.git" rev-parse "refs/heads/release/cli-v0.1.1" >/dev/null \
+  || fail "expected branch release/cli-v0.1.1 on origin (orphan should not have shifted target to 0.3.1)"
 
 echo "all tests passed"

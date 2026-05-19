@@ -131,26 +131,31 @@ ORIGINAL_BRANCH="$CURRENT_BRANCH"
 log_stage "pulling latest from origin/$CURRENT_BRANCH"
 git -C "$REPO_ROOT" pull --ff-only origin "$CURRENT_BRANCH"
 
-log_stage "fetching tags from origin"
-git -C "$REPO_ROOT" fetch --tags --prune origin
-
 # --- Compute version & pre-flight checks (cheap, run before build) ---
+#
+# Baseline is read from origin via `ls-remote`, not from local tags. A local
+# orphan tag left over from a failed `git push origin cli-vX.Y.Z` must not
+# influence the next version — otherwise we'd skip versions or release on top
+# of something that was never published.
 
-log_stage "computing next version from latest cli-v* tag"
-LATEST_TAG="$(git -C "$REPO_ROOT" tag --list 'cli-v*' --sort=-version:refname | head -n1)"
+log_stage "computing next version from latest origin cli-v* tag"
+LATEST_TAG="$(git -C "$REPO_ROOT" ls-remote --tags --refs origin 'cli-v*' \
+  | awk '{sub(/^refs\/tags\//, "", $2); print $2}' \
+  | sort -V \
+  | tail -n1)"
 if [[ -n "$LATEST_TAG" ]]; then
   BASE_VERSION="${LATEST_TAG#cli-v}"
   # Reject prerelease tags (e.g., cli-v0.2.0-rc.1). Only pure X.Y.Z is supported.
   if [[ "$BASE_VERSION" =~ [^0-9.] ]]; then
-    echo "latest tag $LATEST_TAG contains prerelease suffix: $BASE_VERSION" >&2
+    echo "latest origin tag $LATEST_TAG contains prerelease suffix: $BASE_VERSION" >&2
     echo "this script only supports pure X.Y.Z versions" >&2
     echo "skip prerelease tags manually or use a different baseline" >&2
     exit 1
   fi
-  log_stage "baseline: $BASE_VERSION (from $LATEST_TAG)"
+  log_stage "baseline: $BASE_VERSION (from origin $LATEST_TAG)"
 else
   BASE_VERSION="$(PACKAGE_JSON="$PACKAGE_JSON" node -p "require(process.env.PACKAGE_JSON).version")"
-  log_stage "no cli-v* tags found, baseline: $BASE_VERSION (from package.json)"
+  log_stage "no cli-v* tags on origin, baseline: $BASE_VERSION (from package.json)"
 fi
 
 NEW_VERSION="$(BASE_VERSION="$BASE_VERSION" BUMP_TYPE="$BUMP_TYPE" node -e "

@@ -12,7 +12,7 @@ interface InstallCommandProps {
 }
 
 export function buildInstallTarget(namespace: string, slug: string): string {
-  return namespace === 'global' ? slug : `${namespace}--${slug}`
+  return `${namespace}--${slug}`
 }
 
 export function getBaseUrl(): string {
@@ -33,8 +33,7 @@ export function buildInstallCommand(namespace: string, slug: string, baseUrl: st
 }
 
 export function buildSkillhubCliCommand(namespace: string, slug: string, baseUrl: string): string {
-  const target = namespace === 'global' ? slug : `${namespace}/${slug}`
-  return `skillhub install ${target} --registry ${baseUrl}`
+  return `skillhub install ${namespace}/${slug} --registry ${baseUrl}`
 }
 
 function CommandBlock({ command }: { command: string }) {

@@ -48,10 +48,10 @@ describe('install-command', () => {
     Reflect.deleteProperty(globalThis, 'window')
   })
 
-  it('uses the plain slug for the global namespace', () => {
-    expect(buildInstallTarget('global', 'my-skill')).toBe('my-skill')
+  it('always prefixes the install target with namespace', () => {
+    expect(buildInstallTarget('global', 'my-skill')).toBe('global--my-skill')
     expect(buildInstallCommand('global', 'my-skill', 'https://skill.xfyun.cn')).toBe(
-      'npx clawhub install my-skill --registry https://skill.xfyun.cn',
+      'npx clawhub install global--my-skill --registry https://skill.xfyun.cn',
     )
   })
 
@@ -85,11 +85,11 @@ describe('install-command', () => {
 
   it('builds skillhub CLI command with namespace/slug format', () => {
     expect(buildSkillhubCliCommand('global', 'my-skill', 'https://skill.xfyun.cn')).toBe(
-      'skillhub install my-skill --registry https://skill.xfyun.cn',
+      'skillhub install global/my-skill --registry https://skill.xfyun.cn',
     )
   })
 
-  it('builds skillhub CLI command with namespace prefix for non-global', () => {
+  it('builds skillhub CLI command for non-global namespaces', () => {
     expect(buildSkillhubCliCommand('team-alpha', 'my-skill', 'https://skill.xfyun.cn')).toBe(
       'skillhub install team-alpha/my-skill --registry https://skill.xfyun.cn',
     )

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, Copy } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/shared/ui/tabs'
 import { useCopyToClipboard } from '@/shared/lib/clipboard'
 
 interface InstallCommandProps {
@@ -20,11 +21,9 @@ export function getBaseUrl(): string {
   }
   const runtimeConfig = window.__SKILLHUB_RUNTIME_CONFIG__
   const configuredUrl = runtimeConfig?.appBaseUrl
-  // Use configured URL only if it's set and not localhost
   if (configuredUrl && !configuredUrl.includes('localhost')) {
     return configuredUrl
   }
-  // Fallback to current page origin
   return `${window.location.protocol}//${window.location.host}`
 }
 
@@ -33,13 +32,14 @@ export function buildInstallCommand(namespace: string, slug: string, baseUrl: st
   return `npx clawhub install ${installTarget} --registry ${baseUrl}`
 }
 
-export function InstallCommand({ namespace, slug }: InstallCommandProps) {
+export function buildSkillhubCliCommand(namespace: string, slug: string, baseUrl: string): string {
+  const target = namespace === 'global' ? slug : `${namespace}/${slug}`
+  return `skillhub install ${target} --registry ${baseUrl}`
+}
+
+function CommandBlock({ command }: { command: string }) {
   const { t } = useTranslation()
   const [copied, copy] = useCopyToClipboard()
-
-  const baseUrl = useMemo(() => getBaseUrl(), [])
-
-  const command = useMemo(() => buildInstallCommand(namespace, slug, baseUrl), [baseUrl, namespace, slug])
 
   const handleCopy = async () => {
     try {
@@ -68,5 +68,26 @@ export function InstallCommand({ namespace, slug }: InstallCommandProps) {
         </code>
       </pre>
     </div>
+  )
+}
+
+export function InstallCommand({ namespace, slug }: InstallCommandProps) {
+  const baseUrl = useMemo(() => getBaseUrl(), [])
+  const clawhubCommand = useMemo(() => buildInstallCommand(namespace, slug, baseUrl), [baseUrl, namespace, slug])
+  const skillhubCommand = useMemo(() => buildSkillhubCliCommand(namespace, slug, baseUrl), [baseUrl, namespace, slug])
+
+  return (
+    <Tabs defaultValue="skillhub" className="space-y-3">
+      <TabsList>
+        <TabsTrigger value="skillhub">SkillHub CLI</TabsTrigger>
+        <TabsTrigger value="clawhub">ClawHub</TabsTrigger>
+      </TabsList>
+      <TabsContent value="skillhub">
+        <CommandBlock command={skillhubCommand} />
+      </TabsContent>
+      <TabsContent value="clawhub">
+        <CommandBlock command={clawhubCommand} />
+      </TabsContent>
+    </Tabs>
   )
 }

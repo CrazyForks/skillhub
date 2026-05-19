@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { InstallCommand, buildInstallCommand, buildInstallTarget, getBaseUrl } from './install-command'
+import { InstallCommand, buildInstallCommand, buildInstallTarget, buildSkillhubCliCommand, getBaseUrl } from './install-command'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -81,6 +81,18 @@ describe('install-command', () => {
   it('falls back to browser origin when app base url contains localhost', () => {
     setMockWindow('http://localhost:8080')
     expect(getBaseUrl()).toBe('https://fallback.example.com')
+  })
+
+  it('builds skillhub CLI command with namespace/slug format', () => {
+    expect(buildSkillhubCliCommand('global', 'my-skill', 'https://skill.xfyun.cn')).toBe(
+      'skillhub install my-skill --registry https://skill.xfyun.cn',
+    )
+  })
+
+  it('builds skillhub CLI command with namespace prefix for non-global', () => {
+    expect(buildSkillhubCliCommand('team-alpha', 'my-skill', 'https://skill.xfyun.cn')).toBe(
+      'skillhub install team-alpha/my-skill --registry https://skill.xfyun.cn',
+    )
   })
 
   it('renders the install command in a more compact code block', () => {

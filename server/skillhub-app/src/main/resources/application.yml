@@ -104,6 +104,16 @@ skillhub:
       code-expiry: ${SKILLHUB_AUTH_PASSWORD_RESET_CODE_EXPIRY:PT10M}
       email-from-address: ${SKILLHUB_AUTH_PASSWORD_RESET_FROM_ADDRESS:noreply@skillhub.local}
       email-from-name: ${SKILLHUB_AUTH_PASSWORD_RESET_FROM_NAME:SkillHub}
+    cas:
+      enabled: ${SKILLHUB_AUTH_CAS_ENABLED:false}
+      server-url: ${SKILLHUB_AUTH_CAS_SERVER_URL:}
+      service-url: ${SKILLHUB_AUTH_CAS_SERVICE_URL:}
+      protocol-version: ${SKILLHUB_AUTH_CAS_PROTOCOL_VERSION:3.0}
+      allow-insecure-server: ${SKILLHUB_AUTH_CAS_ALLOW_INSECURE:false}
+      attributes:
+        username: ${SKILLHUB_AUTH_CAS_ATTR_USERNAME:uid}
+        display-name: ${SKILLHUB_AUTH_CAS_ATTR_DISPLAY_NAME:cn}
+        email: ${SKILLHUB_AUTH_CAS_ATTR_EMAIL:mail}
   public:
     base-url: ${SKILLHUB_PUBLIC_BASE_URL:}
   access-policy:

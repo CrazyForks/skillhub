@@ -26,6 +26,7 @@ function ensureRuntimeConfigFallback() {
       authSessionBootstrapEnabled: 'false',
       authSessionBootstrapProvider: '',
       authSessionBootstrapAuto: 'false',
+      authCasEnabled: 'false',
     }
   }
 }

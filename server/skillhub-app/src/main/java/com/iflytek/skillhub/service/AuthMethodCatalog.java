@@ -1,6 +1,7 @@
 package com.iflytek.skillhub.service;
 
 import com.iflytek.skillhub.auth.bootstrap.PassiveSessionAuthenticator;
+import com.iflytek.skillhub.auth.cas.CasProperties;
 import com.iflytek.skillhub.auth.direct.DirectAuthProvider;
 import com.iflytek.skillhub.auth.oauth.OAuthLoginRedirectSupport;
 import com.iflytek.skillhub.config.AuthSessionBootstrapProperties;
@@ -25,17 +26,20 @@ public class AuthMethodCatalog {
     private final OAuth2ClientProperties oAuth2ClientProperties;
     private final DirectAuthProperties directAuthProperties;
     private final AuthSessionBootstrapProperties sessionBootstrapProperties;
+    private final CasProperties casProperties;
     private final List<DirectAuthProvider> directAuthProviders;
     private final List<PassiveSessionAuthenticator> passiveSessionAuthenticators;
 
     public AuthMethodCatalog(OAuth2ClientProperties oAuth2ClientProperties,
                              DirectAuthProperties directAuthProperties,
                              AuthSessionBootstrapProperties sessionBootstrapProperties,
+                             CasProperties casProperties,
                              List<DirectAuthProvider> directAuthProviders,
                              List<PassiveSessionAuthenticator> passiveSessionAuthenticators) {
         this.oAuth2ClientProperties = oAuth2ClientProperties;
         this.directAuthProperties = directAuthProperties;
         this.sessionBootstrapProperties = sessionBootstrapProperties;
+        this.casProperties = casProperties;
         this.directAuthProviders = directAuthProviders;
         this.passiveSessionAuthenticators = passiveSessionAuthenticators;
     }
@@ -102,11 +106,29 @@ public class AuthMethodCatalog {
                 )));
         }
 
+        if (casProperties.isEnabled()) {
+            methods.add(new AuthMethodResponse(
+                "cas",
+                "CAS_REDIRECT",
+                "cas",
+                "CAS",
+                buildCasLoginUrl(sanitizedReturnTo)
+            ));
+        }
+
         return methods;
     }
 
     private String buildAuthorizationUrl(String registrationId, String returnTo) {
         String baseUrl = "/oauth2/authorization/" + registrationId;
+        if (returnTo == null) {
+            return baseUrl;
+        }
+        return baseUrl + "?returnTo=" + URLEncoder.encode(returnTo, StandardCharsets.UTF_8);
+    }
+
+    private String buildCasLoginUrl(String returnTo) {
+        String baseUrl = "/api/v1/auth/cas/login";
         if (returnTo == null) {
             return baseUrl;
         }

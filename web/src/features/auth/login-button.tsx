@@ -27,7 +27,9 @@ export function LoginButton({ returnTo }: LoginButtonProps) {
   const { t } = useTranslation()
   const { data, isLoading } = useAuthMethods(returnTo)
 
-  const providers = (data ?? []).filter((method) => method.methodType === 'OAUTH_REDIRECT')
+  const providers = (data ?? []).filter(
+    (method) => method.methodType === 'OAUTH_REDIRECT' || method.methodType === 'CAS_REDIRECT',
+  )
 
   if (isLoading) {
     return (

@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.auth.identity;
 
 import com.iflytek.skillhub.auth.entity.IdentityBinding;
-import com.iflytek.skillhub.auth.oauth.OAuthClaims;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.rbac.PlatformRoleDefaults;
 import com.iflytek.skillhub.auth.repository.IdentityBindingRepository;
@@ -17,7 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Resolves external OAuth identities to platform users, creating or updating
+ * Resolves external identities (OAuth, CAS, etc.) to platform users, creating or updating
  * bindings and user records as needed.
  */
 @Service
@@ -39,7 +38,7 @@ public class IdentityBindingService {
     }
 
     @Transactional
-    public PlatformPrincipal bindOrCreate(OAuthClaims claims, UserStatus initialStatus) {
+    public PlatformPrincipal bindOrCreate(IdentityClaims claims, UserStatus initialStatus) {
         IdentityBinding binding = bindingRepo
             .findByProviderCodeAndSubject(claims.provider(), claims.subject())
             .orElse(null);
@@ -90,7 +89,7 @@ public class IdentityBindingService {
     }
 
     @Transactional
-    public void createPendingUserIfAbsent(OAuthClaims claims) {
+    public void createPendingUserIfAbsent(IdentityClaims claims) {
         IdentityBinding existingBinding = bindingRepo
             .findByProviderCodeAndSubject(claims.provider(), claims.subject())
             .orElse(null);

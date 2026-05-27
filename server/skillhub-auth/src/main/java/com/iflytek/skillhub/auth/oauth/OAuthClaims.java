@@ -1,5 +1,6 @@
 package com.iflytek.skillhub.auth.oauth;
 
+import com.iflytek.skillhub.auth.identity.IdentityClaims;
 import java.util.Map;
 
 /**
@@ -13,4 +14,4 @@ public record OAuthClaims(
     boolean emailVerified,
     String providerLogin,
     Map<String, Object> extra
-) {}
+) implements IdentityClaims {}

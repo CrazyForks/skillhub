@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui/button'
+import type { AuthMethod } from '@/api/types'
 import { useAuthMethods } from './use-auth-methods'
 
 interface LoginButtonProps {
@@ -7,9 +8,14 @@ interface LoginButtonProps {
 }
 
 /**
- * Returns the appropriate icon for a given OAuth provider.
+ * Method types this button renders. CAS uses the same redirect-and-callback shape as OAuth from
+ * the UI's perspective, so we treat both as external-redirect providers.
  */
-function OAuthIcon({ provider }: { provider: string }) {
+export function isExternalRedirectMethod(method: AuthMethod): boolean {
+  return method.methodType === 'OAUTH_REDIRECT' || method.methodType === 'CAS_REDIRECT'
+}
+
+function ExternalProviderIcon({ provider }: { provider: string }) {
   const normalizedProvider = provider.toLowerCase()
   return (
     <img
@@ -21,15 +27,13 @@ function OAuthIcon({ provider }: { provider: string }) {
 }
 
 /**
- * Renders OAuth login buttons from the auth-method catalog returned by the backend.
+ * Renders external-IdP login buttons (OAuth and CAS) from the auth-method catalog.
  */
 export function LoginButton({ returnTo }: LoginButtonProps) {
   const { t } = useTranslation()
   const { data, isLoading } = useAuthMethods(returnTo)
 
-  const providers = (data ?? []).filter(
-    (method) => method.methodType === 'OAUTH_REDIRECT' || method.methodType === 'CAS_REDIRECT',
-  )
+  const providers = (data ?? []).filter(isExternalRedirectMethod)
 
   if (isLoading) {
     return (
@@ -53,7 +57,7 @@ export function LoginButton({ returnTo }: LoginButtonProps) {
             window.location.href = provider.actionUrl
           }}
         >
-          <OAuthIcon provider={provider.provider} />
+          <ExternalProviderIcon provider={provider.provider} />
           {t('loginButton.loginWith', { name: provider.displayName })}
         </Button>
       ))}

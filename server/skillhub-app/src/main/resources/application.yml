@@ -106,7 +106,10 @@ skillhub:
       email-from-name: ${SKILLHUB_AUTH_PASSWORD_RESET_FROM_NAME:SkillHub}
     cas:
       enabled: ${SKILLHUB_AUTH_CAS_ENABLED:false}
+      # Base URL of the CAS server (e.g. https://cas.example.com). Must be HTTPS unless allow-insecure-server=true.
       server-url: ${SKILLHUB_AUTH_CAS_SERVER_URL:}
+      # Must equal ${skillhub.public.base-url}/api/v1/auth/cas/callback — the CAS server validates
+      # the service ticket against this exact URL, so a mismatch yields INVALID_SERVICE.
       service-url: ${SKILLHUB_AUTH_CAS_SERVICE_URL:}
       protocol-version: ${SKILLHUB_AUTH_CAS_PROTOCOL_VERSION:3.0}
       allow-insecure-server: ${SKILLHUB_AUTH_CAS_ALLOW_INSECURE:false}

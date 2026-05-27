@@ -1,12 +1,12 @@
 package com.iflytek.skillhub.auth.cas;
 
-import com.iflytek.skillhub.auth.identity.IdentityBindingService;
+import com.iflytek.skillhub.auth.identity.AccessDeniedByPolicyException;
+import com.iflytek.skillhub.auth.identity.IdentityAuthenticator;
 import com.iflytek.skillhub.auth.oauth.AccountDisabledException;
 import com.iflytek.skillhub.auth.oauth.AccountPendingException;
 import com.iflytek.skillhub.auth.oauth.OAuthLoginRedirectSupport;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.session.PlatformSessionService;
-import com.iflytek.skillhub.domain.user.UserStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -19,6 +19,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Handles CAS SSO login flow: redirect to CAS server and callback with ticket validation.
+ * Delegates access-policy evaluation and principal provisioning to {@link IdentityAuthenticator}
+ * so the same allow/deny/pending decisions apply to OAuth and CAS uniformly.
  */
 @Controller
 @RequestMapping("/api/v1/auth/cas")
@@ -28,24 +30,21 @@ public class CasLoginController {
 
     private final CasProperties casProperties;
     private final CasTicketValidator ticketValidator;
-    private final IdentityBindingService identityBindingService;
+    private final IdentityAuthenticator identityAuthenticator;
     private final PlatformSessionService sessionService;
 
     public CasLoginController(
         CasProperties casProperties,
         CasTicketValidator ticketValidator,
-        IdentityBindingService identityBindingService,
+        IdentityAuthenticator identityAuthenticator,
         PlatformSessionService sessionService
     ) {
         this.casProperties = casProperties;
         this.ticketValidator = ticketValidator;
-        this.identityBindingService = identityBindingService;
+        this.identityAuthenticator = identityAuthenticator;
         this.sessionService = sessionService;
     }
 
-    /**
-     * Initiates CAS login by redirecting to the CAS server.
-     */
     @GetMapping("/login")
     public String login(
         @RequestParam(required = false) String returnTo,
@@ -71,9 +70,6 @@ public class CasLoginController {
         return "redirect:" + casLoginUrl;
     }
 
-    /**
-     * Handles CAS callback with ticket validation and session establishment.
-     */
     @GetMapping("/callback")
     public String callback(
         @RequestParam(required = false) String ticket,
@@ -89,11 +85,18 @@ public class CasLoginController {
             return "redirect:/login?error=missing_ticket";
         }
 
+        CasIdentityClaims claims;
         try {
-            CasIdentityClaims claims = ticketValidator.validate(ticket);
-            log.info("CAS ticket validated successfully for user: {}", claims.subject());
+            claims = ticketValidator.validate(ticket);
+        } catch (CasValidationException e) {
+            log.error("CAS ticket validation failed: {}", e.getMessage());
+            return "redirect:/login?error=cas_validation_failed";
+        }
 
-            PlatformPrincipal principal = identityBindingService.bindOrCreate(claims, UserStatus.ACTIVE);
+        log.info("CAS ticket validated for subject={}", claims.subject());
+
+        try {
+            PlatformPrincipal principal = identityAuthenticator.authenticate(claims);
             sessionService.establishSession(principal, request);
 
             HttpSession session = request.getSession(false);
@@ -103,21 +106,24 @@ public class CasLoginController {
                 session.removeAttribute(OAuthLoginRedirectSupport.SESSION_RETURN_TO_ATTRIBUTE);
             }
 
-            String targetUrl = returnTo != null ? returnTo : OAuthLoginRedirectSupport.DEFAULT_TARGET_URL;
+            String targetUrl = OAuthLoginRedirectSupport.sanitizeReturnTo(returnTo);
+            if (targetUrl == null) {
+                targetUrl = OAuthLoginRedirectSupport.DEFAULT_TARGET_URL;
+            }
             log.debug("CAS login successful, redirecting to: {}", targetUrl);
             return "redirect:" + targetUrl;
 
         } catch (AccountPendingException e) {
-            log.warn("CAS user account pending approval: {}", ticket);
+            log.warn("CAS user pending approval: subject={}", claims.subject());
             return "redirect:/pending-approval";
         } catch (AccountDisabledException e) {
-            log.warn("CAS user account disabled: {}", ticket);
+            log.warn("CAS user disabled: subject={}", claims.subject());
             return "redirect:/access-denied";
-        } catch (CasValidationException e) {
-            log.error("CAS ticket validation failed: {}", e.getMessage());
-            return "redirect:/login?error=cas_validation_failed";
+        } catch (AccessDeniedByPolicyException e) {
+            log.warn("CAS user denied by policy: subject={}", claims.subject());
+            return "redirect:/access-denied";
         } catch (Exception e) {
-            log.error("Unexpected error during CAS callback", e);
+            log.error("Unexpected error during CAS callback for subject={}", claims.subject(), e);
             return "redirect:/login?error=internal_error";
         }
     }

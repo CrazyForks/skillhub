@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.auth.oauth;
 
-import com.iflytek.skillhub.auth.identity.IdentityBindingService;
-import com.iflytek.skillhub.auth.policy.AccessPolicy;
+import com.iflytek.skillhub.auth.identity.IdentityAuthenticator;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,8 +17,7 @@ class OAuthLoginFlowServiceTest {
     void rememberReturnTo_stores_sanitized_return_target() {
         OAuthLoginFlowService service = new OAuthLoginFlowService(
                 List.of(),
-                mock(AccessPolicy.class),
-                mock(IdentityBindingService.class)
+                mock(IdentityAuthenticator.class)
         );
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setParameter("returnTo", "/dashboard/publish");
@@ -36,8 +34,7 @@ class OAuthLoginFlowServiceTest {
     void resolveFailureRedirect_maps_access_denied_to_user_facing_page() {
         OAuthLoginFlowService service = new OAuthLoginFlowService(
                 List.of(),
-                mock(AccessPolicy.class),
-                mock(IdentityBindingService.class)
+                mock(IdentityAuthenticator.class)
         );
 
         String redirect = service.resolveFailureRedirect(
@@ -52,8 +49,7 @@ class OAuthLoginFlowServiceTest {
     void consumeReturnTo_clearsUnsafeSessionValue() {
         OAuthLoginFlowService service = new OAuthLoginFlowService(
                 List.of(),
-                mock(AccessPolicy.class),
-                mock(IdentityBindingService.class)
+                mock(IdentityAuthenticator.class)
         );
         MockHttpServletRequest request = new MockHttpServletRequest();
         HttpSession session = request.getSession(true);

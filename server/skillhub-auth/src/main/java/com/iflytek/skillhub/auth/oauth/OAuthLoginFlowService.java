@@ -1,10 +1,9 @@
 package com.iflytek.skillhub.auth.oauth;
 
-import com.iflytek.skillhub.auth.identity.IdentityBindingService;
-import com.iflytek.skillhub.auth.policy.AccessDecision;
-import com.iflytek.skillhub.auth.policy.AccessPolicy;
+import com.iflytek.skillhub.auth.identity.AccessDeniedByPolicyException;
+import com.iflytek.skillhub.auth.identity.IdentityAuthenticator;
+import com.iflytek.skillhub.auth.identity.IdentityClaims;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
-import com.iflytek.skillhub.domain.user.UserStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.net.URLEncoder;
@@ -31,16 +30,13 @@ public class OAuthLoginFlowService {
 
     private final DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
     private final Map<String, OAuthClaimsExtractor> extractors;
-    private final AccessPolicy accessPolicy;
-    private final IdentityBindingService identityBindingService;
+    private final IdentityAuthenticator identityAuthenticator;
 
     public OAuthLoginFlowService(List<OAuthClaimsExtractor> extractorList,
-                                 AccessPolicy accessPolicy,
-                                 IdentityBindingService identityBindingService) {
+                                 IdentityAuthenticator identityAuthenticator) {
         this.extractors = extractorList.stream()
                 .collect(Collectors.toMap(OAuthClaimsExtractor::getProvider, Function.identity()));
-        this.accessPolicy = accessPolicy;
-        this.identityBindingService = identityBindingService;
+        this.identityAuthenticator = identityAuthenticator;
     }
 
     public AuthenticatedLoginContext loadLoginContext(OAuth2UserRequest request) {
@@ -59,20 +55,14 @@ public class OAuthLoginFlowService {
         return new AuthenticatedLoginContext(upstreamUser, principal);
     }
 
-    public PlatformPrincipal authenticate(OAuthClaims claims) {
-        AccessDecision decision = accessPolicy.evaluate(claims);
-
-        if (decision == AccessDecision.PENDING_APPROVAL) {
-            identityBindingService.createPendingUserIfAbsent(claims);
-            throw new AccountPendingException();
-        }
-        if (decision == AccessDecision.DENY) {
+    public PlatformPrincipal authenticate(IdentityClaims claims) {
+        try {
+            return identityAuthenticator.authenticate(claims);
+        } catch (AccessDeniedByPolicyException e) {
             throw new OAuth2AuthenticationException(
                     new OAuth2Error("access_denied", "Access denied by policy", null)
             );
         }
-
-        return identityBindingService.bindOrCreate(claims, UserStatus.ACTIVE);
     }
 
     public void rememberReturnTo(HttpServletRequest request) {

@@ -1,7 +1,6 @@
 package com.iflytek.skillhub.auth.oauth;
 
-import com.iflytek.skillhub.auth.identity.IdentityBindingService;
-import com.iflytek.skillhub.auth.policy.AccessPolicy;
+import com.iflytek.skillhub.auth.identity.IdentityAuthenticator;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,8 +31,7 @@ class OAuth2AuthorizationRequestResolverTest {
                 .build();
         OAuthLoginFlowService oauthLoginFlowService = new OAuthLoginFlowService(
                 java.util.List.of(),
-                mock(AccessPolicy.class),
-                mock(IdentityBindingService.class)
+                mock(IdentityAuthenticator.class)
         );
         resolver = new SkillHubOAuth2AuthorizationRequestResolver(
                 new InMemoryClientRegistrationRepository(github),

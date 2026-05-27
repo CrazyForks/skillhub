@@ -20,6 +20,7 @@ public class CasProperties {
     private String protocolVersion = "3.0";
     private boolean allowInsecureServer = false;
     private Map<String, String> attributes = new HashMap<>();
+    private CasProtocolVersion resolvedProtocolVersion = CasProtocolVersion.V3_0;
 
     @PostConstruct
     public void validate() {
@@ -42,8 +43,19 @@ public class CasProperties {
             );
         }
 
-        if (!"2.0".equals(protocolVersion) && !"3.0".equals(protocolVersion)) {
-            throw new IllegalStateException("skillhub.auth.cas.protocol-version must be either '2.0' or '3.0'");
+        if (!allowInsecureServer && !serviceUrl.startsWith("https://")) {
+            throw new IllegalStateException(
+                "CAS service URL must use HTTPS in production (otherwise the service ticket " +
+                "is transmitted in plaintext). " +
+                "Set skillhub.auth.cas.allow-insecure-server=true to override for development."
+            );
+        }
+
+        try {
+            this.resolvedProtocolVersion = CasProtocolVersion.from(protocolVersion);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(
+                "skillhub.auth.cas.protocol-version must be either '2.0' or '3.0'", e);
         }
 
         if (attributes.get("username") == null || attributes.get("username").isBlank()) {
@@ -55,6 +67,14 @@ public class CasProperties {
         if (attributes.get("email") == null || attributes.get("email").isBlank()) {
             attributes.put("email", "mail");
         }
+    }
+
+    /**
+     * Resolved protocol version after validation. Use this in the call path instead of
+     * {@link #getProtocolVersion()} string comparisons.
+     */
+    public CasProtocolVersion resolvedProtocolVersion() {
+        return resolvedProtocolVersion;
     }
 
     public boolean isEnabled() {

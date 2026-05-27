@@ -63,7 +63,6 @@ type RuntimeConfig = {
   authSessionBootstrapEnabled?: string
   authSessionBootstrapProvider?: string
   authSessionBootstrapAuto?: string
-  authCasEnabled?: string
 }
 
 declare global {
@@ -161,17 +160,6 @@ export function getSessionBootstrapRuntimeConfig(): SessionBootstrapRuntimeConfi
     enabled: parseBooleanFlag(config.authSessionBootstrapEnabled) && !!provider,
     provider: provider || undefined,
     auto: parseBooleanFlag(config.authSessionBootstrapAuto),
-  }
-}
-
-export type CasAuthRuntimeConfig = {
-  enabled: boolean
-}
-
-export function getCasAuthRuntimeConfig(): CasAuthRuntimeConfig {
-  const config = getRuntimeConfig()
-  return {
-    enabled: parseBooleanFlag(config.authCasEnabled),
   }
 }
 

@@ -7,12 +7,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.iflytek.skillhub.auth.identity.IdentityBindingService;
+import com.iflytek.skillhub.auth.identity.AccessDeniedByPolicyException;
+import com.iflytek.skillhub.auth.identity.IdentityAuthenticator;
 import com.iflytek.skillhub.auth.oauth.AccountDisabledException;
 import com.iflytek.skillhub.auth.oauth.AccountPendingException;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
 import com.iflytek.skillhub.auth.session.PlatformSessionService;
-import com.iflytek.skillhub.domain.user.UserStatus;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ class CasLoginControllerTest {
     private CasTicketValidator ticketValidator;
 
     @Mock
-    private IdentityBindingService identityBindingService;
+    private IdentityAuthenticator identityAuthenticator;
 
     @Mock
     private PlatformSessionService sessionService;
@@ -47,7 +47,7 @@ class CasLoginControllerTest {
         casProperties.setProtocolVersion("3.0");
         casProperties.setAllowInsecureServer(true);
 
-        controller = new CasLoginController(casProperties, ticketValidator, identityBindingService, sessionService);
+        controller = new CasLoginController(casProperties, ticketValidator, identityAuthenticator, sessionService);
     }
 
     @Test
@@ -99,7 +99,7 @@ class CasLoginControllerTest {
         PlatformPrincipal principal = new PlatformPrincipal("usr_123", "Zhang San", "zhangsan@example.com", null, "cas", Set.of("USER"));
 
         when(ticketValidator.validate("ST-12345")).thenReturn(claims);
-        when(identityBindingService.bindOrCreate(claims, UserStatus.ACTIVE)).thenReturn(principal);
+        when(identityAuthenticator.authenticate(claims)).thenReturn(principal);
 
         String result = controller.callback("ST-12345", request);
 
@@ -115,9 +115,27 @@ class CasLoginControllerTest {
         PlatformPrincipal principal = new PlatformPrincipal("usr_456", "User One", null, null, "cas", Set.of("USER"));
 
         when(ticketValidator.validate("ST-99999")).thenReturn(claims);
-        when(identityBindingService.bindOrCreate(claims, UserStatus.ACTIVE)).thenReturn(principal);
+        when(identityAuthenticator.authenticate(claims)).thenReturn(principal);
 
         String result = controller.callback("ST-99999", request);
+
+        assertThat(result).isEqualTo("redirect:/dashboard");
+    }
+
+    @Test
+    void callback_sanitizesUnsafeReturnTo() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("skillhub.oauth.returnTo", "https://evil.example/steal");
+        request.setSession(session);
+
+        CasIdentityClaims claims = new CasIdentityClaims("u", null, "U", Map.of());
+        PlatformPrincipal principal = new PlatformPrincipal("usr_x", "U", null, null, "cas", Set.of("USER"));
+
+        when(ticketValidator.validate("ST-evil")).thenReturn(claims);
+        when(identityAuthenticator.authenticate(claims)).thenReturn(principal);
+
+        String result = controller.callback("ST-evil", request);
 
         assertThat(result).isEqualTo("redirect:/dashboard");
     }
@@ -157,7 +175,7 @@ class CasLoginControllerTest {
 
         CasIdentityClaims claims = new CasIdentityClaims("pending-user", null, "Pending", Map.of());
         when(ticketValidator.validate("ST-pending")).thenReturn(claims);
-        when(identityBindingService.bindOrCreate(claims, UserStatus.ACTIVE)).thenThrow(new AccountPendingException());
+        when(identityAuthenticator.authenticate(claims)).thenThrow(new AccountPendingException());
 
         String result = controller.callback("ST-pending", request);
 
@@ -170,9 +188,22 @@ class CasLoginControllerTest {
 
         CasIdentityClaims claims = new CasIdentityClaims("disabled-user", null, "Disabled", Map.of());
         when(ticketValidator.validate("ST-disabled")).thenReturn(claims);
-        when(identityBindingService.bindOrCreate(claims, UserStatus.ACTIVE)).thenThrow(new AccountDisabledException());
+        when(identityAuthenticator.authenticate(claims)).thenThrow(new AccountDisabledException());
 
         String result = controller.callback("ST-disabled", request);
+
+        assertThat(result).isEqualTo("redirect:/access-denied");
+    }
+
+    @Test
+    void callback_accessPolicyDeny_redirectsToAccessDenied() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+
+        CasIdentityClaims claims = new CasIdentityClaims("denied-user", "denied@bad.example", "Denied", Map.of());
+        when(ticketValidator.validate("ST-denied")).thenReturn(claims);
+        when(identityAuthenticator.authenticate(claims)).thenThrow(new AccessDeniedByPolicyException());
+
+        String result = controller.callback("ST-denied", request);
 
         assertThat(result).isEqualTo("redirect:/access-denied");
     }

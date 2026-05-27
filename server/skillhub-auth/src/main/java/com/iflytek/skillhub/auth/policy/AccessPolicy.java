@@ -1,10 +1,10 @@
 package com.iflytek.skillhub.auth.policy;
 
-import com.iflytek.skillhub.auth.oauth.OAuthClaims;
+import com.iflytek.skillhub.auth.identity.IdentityClaims;
 
 /**
  * Policy contract for deciding whether externally authenticated users may enter the platform.
  */
 public interface AccessPolicy {
-    AccessDecision evaluate(OAuthClaims claims);
+    AccessDecision evaluate(IdentityClaims claims);
 }

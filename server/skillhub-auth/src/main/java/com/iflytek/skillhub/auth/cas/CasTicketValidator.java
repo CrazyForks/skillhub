@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -15,6 +16,8 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +29,8 @@ import java.util.Map;
 public class CasTicketValidator {
 
     private static final Logger log = LoggerFactory.getLogger(CasTicketValidator.class);
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
 
     private final CasProperties casProperties;
     private final RestClient restClient;
@@ -33,13 +38,23 @@ public class CasTicketValidator {
 
     @Autowired
     public CasTicketValidator(CasProperties casProperties, ObjectMapper objectMapper) {
-        this(casProperties, objectMapper, RestClient.builder().build());
+        this(casProperties, objectMapper, defaultRestClient());
     }
 
     CasTicketValidator(CasProperties casProperties, ObjectMapper objectMapper, RestClient restClient) {
         this.casProperties = casProperties;
         this.objectMapper = objectMapper;
         this.restClient = restClient;
+    }
+
+    private static RestClient defaultRestClient() {
+        HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(CONNECT_TIMEOUT)
+            .followRedirects(HttpClient.Redirect.NEVER)
+            .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(READ_TIMEOUT);
+        return RestClient.builder().requestFactory(factory).build();
     }
 
     /**
@@ -67,7 +82,7 @@ public class CasTicketValidator {
                 throw new CasValidationException("Empty response from CAS server");
             }
 
-            if ("3.0".equals(casProperties.getProtocolVersion())) {
+            if (casProperties.resolvedProtocolVersion().isJson()) {
                 return parseJsonResponse(response);
             } else {
                 return parseXmlResponse(response);
@@ -81,16 +96,14 @@ public class CasTicketValidator {
     }
 
     private String buildValidationUrl(String ticket) {
-        String endpoint = "3.0".equals(casProperties.getProtocolVersion())
-            ? "/p3/serviceValidate"
-            : "/serviceValidate";
+        CasProtocolVersion version = casProperties.resolvedProtocolVersion();
 
         UriComponentsBuilder builder = UriComponentsBuilder
-            .fromHttpUrl(casProperties.getServerUrl() + endpoint)
+            .fromHttpUrl(casProperties.getServerUrl() + version.validatePath())
             .queryParam("ticket", ticket)
             .queryParam("service", casProperties.getServiceUrl());
 
-        if ("3.0".equals(casProperties.getProtocolVersion())) {
+        if (version.isJson()) {
             builder.queryParam("format", "JSON");
         }
 
@@ -124,9 +137,19 @@ public class CasTicketValidator {
                 JsonNode value = entry.getValue();
                 if (value.isTextual()) {
                     attributes.put(entry.getKey(), value.asText());
-                } else if (value.isArray() && value.size() > 0) {
-                    attributes.put(entry.getKey(), value.get(0).asText());
-                } else {
+                } else if (value.isArray()) {
+                    if (value.size() == 1) {
+                        attributes.put(entry.getKey(), value.get(0).asText());
+                    } else if (value.size() > 1) {
+                        java.util.List<String> values = new java.util.ArrayList<>(value.size());
+                        for (JsonNode item : value) {
+                            values.add(item.asText());
+                        }
+                        attributes.put(entry.getKey(), java.util.List.copyOf(values));
+                    }
+                } else if (value.isNumber() || value.isBoolean()) {
+                    attributes.put(entry.getKey(), value.asText());
+                } else if (!value.isNull()) {
                     attributes.put(entry.getKey(), value.toString());
                 }
             });
@@ -137,9 +160,16 @@ public class CasTicketValidator {
 
     private CasIdentityClaims parseXmlResponse(String response) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(javax.xml.XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
         factory.setNamespaceAware(true);
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new ByteArrayInputStream(response.getBytes()));
+        Document doc = builder.parse(new ByteArrayInputStream(response.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
         Element root = doc.getDocumentElement();
 
@@ -192,10 +222,20 @@ public class CasTicketValidator {
         String displayNameAttr = casProperties.getAttributes().get("display-name");
         String emailAttr = casProperties.getAttributes().get("email");
 
-        String subject = attributes.getOrDefault(usernameAttr, user).toString();
-        String displayName = attributes.getOrDefault(displayNameAttr, user).toString();
-        String email = attributes.containsKey(emailAttr) ? attributes.get(emailAttr).toString() : null;
+        String subject = firstStringOr(attributes.get(usernameAttr), user);
+        String displayName = firstStringOr(attributes.get(displayNameAttr), user);
+        String email = firstStringOr(attributes.get(emailAttr), null);
 
         return new CasIdentityClaims(subject, email, displayName, attributes);
+    }
+
+    private static String firstStringOr(Object value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        if (value instanceof java.util.List<?> list) {
+            return list.isEmpty() ? fallback : String.valueOf(list.get(0));
+        }
+        return value.toString();
     }
 }

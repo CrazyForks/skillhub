@@ -1,10 +1,10 @@
 package com.iflytek.skillhub.auth.policy;
 
-import com.iflytek.skillhub.auth.oauth.OAuthClaims;
+import com.iflytek.skillhub.auth.identity.IdentityClaims;
 import java.util.Set;
 
 /**
- * Access policy that limits login to explicitly allowed OAuth providers.
+ * Access policy that limits login to explicitly allowed identity providers.
  */
 public class ProviderAllowlistAccessPolicy implements AccessPolicy {
     private final Set<String> allowedProviders;
@@ -14,7 +14,7 @@ public class ProviderAllowlistAccessPolicy implements AccessPolicy {
     }
 
     @Override
-    public AccessDecision evaluate(OAuthClaims claims) {
+    public AccessDecision evaluate(IdentityClaims claims) {
         return allowedProviders.contains(claims.provider())
             ? AccessDecision.ALLOW : AccessDecision.DENY;
     }

@@ -23,6 +23,9 @@ public record CasIdentityClaims(
 
     @Override
     public boolean emailVerified() {
-        return email != null && !email.isBlank();
+        // CAS protocol does not verify email addresses — the attribute is passed through from the
+        // upstream directory (LDAP, AD, etc.) without cryptographic proof. Return false to prevent
+        // AccessPolicy implementations from trusting unverified claims.
+        return false;
     }
 }

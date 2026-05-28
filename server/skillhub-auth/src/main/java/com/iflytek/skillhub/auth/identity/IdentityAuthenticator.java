@@ -1,6 +1,6 @@
 package com.iflytek.skillhub.auth.identity;
 
-import com.iflytek.skillhub.auth.oauth.AccountPendingException;
+import com.iflytek.skillhub.auth.identity.AccountPendingException;
 import com.iflytek.skillhub.auth.policy.AccessDecision;
 import com.iflytek.skillhub.auth.policy.AccessPolicy;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;
@@ -28,7 +28,7 @@ public class IdentityAuthenticator {
      *
      * @throws AccountPendingException if the policy yields PENDING_APPROVAL
      * @throws AccessDeniedByPolicyException if the policy yields DENY
-     * @throws com.iflytek.skillhub.auth.oauth.AccountDisabledException if the user is disabled
+     * @throws com.iflytek.skillhub.auth.identity.AccountDisabledException if the user is disabled
      */
     public PlatformPrincipal authenticate(IdentityClaims claims) {
         AccessDecision decision = accessPolicy.evaluate(claims);

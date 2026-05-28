@@ -1,6 +1,8 @@
 package com.iflytek.skillhub.auth.oauth;
 
 import com.iflytek.skillhub.auth.identity.AccessDeniedByPolicyException;
+import com.iflytek.skillhub.auth.identity.AccountDisabledException;
+import com.iflytek.skillhub.auth.identity.AccountPendingException;
 import com.iflytek.skillhub.auth.identity.IdentityAuthenticator;
 import com.iflytek.skillhub.auth.identity.IdentityClaims;
 import com.iflytek.skillhub.auth.rbac.PlatformPrincipal;

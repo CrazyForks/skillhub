@@ -71,10 +71,10 @@ public class IdentityBindingService {
         }
 
         if (user.getStatus() == UserStatus.PENDING) {
-            throw new com.iflytek.skillhub.auth.oauth.AccountPendingException();
+            throw new com.iflytek.skillhub.auth.identity.AccountPendingException();
         }
         if (user.getStatus() == UserStatus.DISABLED) {
-            throw new com.iflytek.skillhub.auth.oauth.AccountDisabledException();
+            throw new com.iflytek.skillhub.auth.identity.AccountDisabledException();
         }
 
         Set<String> roles = roleBindingRepo.findByUserId(user.getId()).stream()
@@ -97,9 +97,9 @@ public class IdentityBindingService {
             UserAccount existingUser = userRepo.findById(existingBinding.getUserId())
                 .orElseThrow(() -> new IllegalStateException("User not found for binding"));
             if (existingUser.getStatus() == UserStatus.DISABLED) {
-                throw new com.iflytek.skillhub.auth.oauth.AccountDisabledException();
+                throw new com.iflytek.skillhub.auth.identity.AccountDisabledException();
             }
-            throw new com.iflytek.skillhub.auth.oauth.AccountPendingException();
+            throw new com.iflytek.skillhub.auth.identity.AccountPendingException();
         }
 
         UserAccount user = new UserAccount(

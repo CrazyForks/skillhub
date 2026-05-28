@@ -1,10 +1,11 @@
-package com.iflytek.skillhub.auth.oauth;
+package com.iflytek.skillhub.auth.identity;
 
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 
 /**
- * OAuth authentication exception raised when the mapped platform account is disabled.
+ * Thrown when an authenticated external identity maps to a platform account that is disabled.
+ * Used by both OAuth and CAS flows.
  */
 public class AccountDisabledException extends OAuth2AuthenticationException {
 

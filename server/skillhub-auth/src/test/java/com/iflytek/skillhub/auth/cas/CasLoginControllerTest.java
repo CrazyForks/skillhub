@@ -306,6 +306,6 @@ class CasLoginControllerTest {
 
         String result = controller.callback("ST-broken", "valid-nonce", request);
 
-        assertThat(result).isEqualTo("redirect:/login?error=internal_error");
+        assertThat(result).isEqualTo("redirect:/login?reason=internalError");
     }
 }

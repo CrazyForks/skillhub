@@ -227,7 +227,13 @@
     "agreementPrefix": "登录即表示你同意我们的",
     "terms": "服务条款",
     "and": "和",
-    "privacy": "隐私政策"
+    "privacy": "隐私政策",
+    "error": {
+      "casDisabled": "当前部署未启用 CAS 认证",
+      "casValidationFailed": "CAS 票据验证失败，请重试",
+      "casTicketMissing": "认证回调缺少票据参数，请重试",
+      "internalError": "发生意外错误，请重试"
+    }
   },
   "register": {
     "title": "创建账号",

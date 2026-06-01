@@ -319,13 +319,16 @@ class CasTicketValidatorTest {
             .andRespond(withSuccess(xxePayload, MediaType.APPLICATION_XML));
 
         assertThatThrownBy(() -> validator.validate("ST-xxe"))
-            .isInstanceOfAny(CasValidationException.class)
+            .isInstanceOf(CasValidationException.class)
             .satisfies(e -> {
-                // The error must NOT contain the local file content; it should signal a parse
-                // refusal or a missing-user condition (the entity could not be expanded).
                 String msg = e.getMessage() == null ? "" : e.getMessage();
                 assertThat(msg).doesNotContain("root:");
                 assertThat(msg).doesNotContain("/bin/bash");
+            })
+            .cause()
+            .satisfies(cause -> {
+                assertThat(cause.getClass().getName()).contains("SAXParseException");
+                assertThat(cause.getMessage()).containsIgnoringCase("DOCTYPE");
             });
     }
 
@@ -352,8 +355,13 @@ class CasTicketValidatorTest {
             .andRespond(withSuccess(billionLaughs, MediaType.APPLICATION_XML));
 
         // disallow-doctype-decl=true means the parser refuses any DOCTYPE; we expect a validation
-        // exception rather than the parser dutifully expanding billions of entities.
+        // exception wrapping a SAXParseException that rejects the DOCTYPE declaration.
         assertThatThrownBy(() -> validator.validate("ST-laugh"))
-            .isInstanceOf(CasValidationException.class);
+            .isInstanceOf(CasValidationException.class)
+            .cause()
+            .satisfies(cause -> {
+                assertThat(cause.getClass().getName()).contains("SAXParseException");
+                assertThat(cause.getMessage()).containsIgnoringCase("DOCTYPE");
+            });
     }
 }

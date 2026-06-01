@@ -70,7 +70,7 @@ public class CasTicketValidator {
         }
 
         String validationUrl = buildValidationUrl(ticket);
-        log.debug("Validating CAS ticket at endpoint: {}", casProperties.resolvedProtocolVersion().validatePath());
+        log.debug("Validating CAS ticket against {}{}", casProperties.getServerUrl(), casProperties.resolvedProtocolVersion().validatePath());
 
         try {
             String response = restClient.get()
@@ -90,12 +90,8 @@ public class CasTicketValidator {
         } catch (CasValidationException e) {
             throw e;
         } catch (Exception e) {
-            // Log full exception (including URL) at server level for operators; surface only the
-            // exception class to callers so the ticket query parameter never reaches downstream
-            // log streams or error redirects.
-            log.error("CAS ticket validation request failed", e);
-            throw new CasValidationException(
-                "Failed to validate CAS ticket: " + e.getClass().getSimpleName(), e);
+            log.error("CAS ticket validation failed", e);
+            throw new CasValidationException("Failed to validate CAS ticket: " + e.getMessage(), e);
         }
     }
 

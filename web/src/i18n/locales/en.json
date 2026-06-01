@@ -227,7 +227,13 @@
     "agreementPrefix": "By logging in, you agree to our",
     "terms": "Terms of Service",
     "and": "and",
-    "privacy": "Privacy Policy"
+    "privacy": "Privacy Policy",
+    "error": {
+      "casDisabled": "CAS authentication is not enabled on this deployment",
+      "casValidationFailed": "CAS ticket validation failed. Please try again.",
+      "casTicketMissing": "Authentication callback missing ticket. Please try again.",
+      "internalError": "An unexpected error occurred. Please try again."
+    }
   },
   "register": {
     "title": "Create Account",

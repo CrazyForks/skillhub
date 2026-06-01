@@ -125,7 +125,7 @@ class CasLoginControllerTest {
 
         String result = controller.login(null, request);
 
-        assertThat(result).isEqualTo("redirect:/login?error=cas_disabled");
+        assertThat(result).isEqualTo("redirect:/login?reason=casDisabled");
     }
 
     // ─── callback() ────────────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ class CasLoginControllerTest {
 
         String result = controller.callback(null, "valid-nonce", request);
 
-        assertThat(result).isEqualTo("redirect:/login?error=missing_ticket");
+        assertThat(result).isEqualTo("redirect:/login?reason=casTicketMissing");
         verify(ticketValidator, never()).validate(any());
     }
 
@@ -203,7 +203,7 @@ class CasLoginControllerTest {
 
         String result = controller.callback("  ", "valid-nonce", request);
 
-        assertThat(result).isEqualTo("redirect:/login?error=missing_ticket");
+        assertThat(result).isEqualTo("redirect:/login?reason=casTicketMissing");
     }
 
     @Test
@@ -213,7 +213,7 @@ class CasLoginControllerTest {
 
         String result = controller.callback("ST-12345", "valid-nonce", request);
 
-        assertThat(result).isEqualTo("redirect:/login?error=cas_disabled");
+        assertThat(result).isEqualTo("redirect:/login?reason=casDisabled");
     }
 
     @Test
@@ -293,7 +293,7 @@ class CasLoginControllerTest {
 
         String result = controller.callback("ST-invalid", "valid-nonce", request);
 
-        assertThat(result).isEqualTo("redirect:/login?error=cas_validation_failed");
+        assertThat(result).isEqualTo("redirect:/login?reason=casValidationFailed");
     }
 
     @Test

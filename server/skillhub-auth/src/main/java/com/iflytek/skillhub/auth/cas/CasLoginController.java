@@ -65,7 +65,7 @@ public class CasLoginController {
     ) {
         if (!casProperties.isEnabled()) {
             log.warn("CAS login attempted but CAS is not enabled");
-            return "redirect:/login?error=cas_disabled";
+            return "redirect:/login?reason=casDisabled";
         }
 
         HttpSession session = request.getSession(true);
@@ -99,12 +99,12 @@ public class CasLoginController {
     ) {
         if (!casProperties.isEnabled()) {
             log.warn("CAS callback received but CAS is not enabled");
-            return "redirect:/login?error=cas_disabled";
+            return "redirect:/login?reason=casDisabled";
         }
 
         if (ticket == null || ticket.isBlank()) {
             log.warn("CAS callback received without ticket parameter");
-            return "redirect:/login?error=missing_ticket";
+            return "redirect:/login?reason=casTicketMissing";
         }
 
         // CSRF: validate state nonce before touching the ticket
@@ -121,7 +121,7 @@ public class CasLoginController {
             claims = ticketValidator.validate(ticket);
         } catch (CasValidationException e) {
             log.error("CAS ticket validation failed: {}", e.getMessage());
-            return "redirect:/login?error=cas_validation_failed";
+            return "redirect:/login?reason=casValidationFailed";
         }
 
         log.info("CAS ticket validated for subject={}", claims.subject());
@@ -157,7 +157,7 @@ public class CasLoginController {
             return "redirect:/access-denied";
         } catch (Exception e) {
             log.error("Unexpected error during CAS callback for subject={}", claims.subject(), e);
-            return "redirect:/login?error=internal_error";
+            return "redirect:/login?reason=internalError";
         }
     }
 

@@ -91,8 +91,7 @@ export function MySkillsPage() {
     q: keyword || undefined,
     namespace: namespaceFilter || undefined,
   })
-  const { data: namespacesPage } = useMyNamespaces({ page: 0, size: 100 })
-  const namespaceOptions = namespacesPage?.items ?? []
+  const { data: namespaceOptions } = useMyNamespaces()
 
   const skills = skillPage?.items ?? []
   const totalPages = skillPage ? Math.max(Math.ceil(skillPage.total / skillPage.size), 1) : 1
@@ -314,7 +313,7 @@ export function MySkillsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL_NAMESPACES_VALUE}>{t('mySkills.namespaceFilterAll')}</SelectItem>
-              {namespaceOptions.map((ns) => (
+              {(namespaceOptions ?? []).map((ns: { id: number; slug: string }) => (
                 <SelectItem key={ns.id} value={ns.slug}>
                   @{ns.slug}
                 </SelectItem>

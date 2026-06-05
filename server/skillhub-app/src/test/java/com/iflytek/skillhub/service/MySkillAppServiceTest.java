@@ -274,6 +274,7 @@ class MySkillAppServiceTest {
 
         given(skillRepository.findByOwnerId("user-1", PageRequest.of(0, 10)))
                 .willReturn(new PageImpl<>(List.of(skill), PageRequest.of(0, 10), 1));
+        given(skillVersionRepository.findBySkillIdAndStatus(6L, SkillVersionStatus.PUBLISHED)).willReturn(List.of(publishedVersion));
         given(skillVersionRepository.findBySkillId(6L)).willReturn(List.of(rejectedVersion, publishedVersion));
         given(namespaceRepository.findByIdIn(List.of(101L))).willReturn(List.of(namespace(101L, "team-ai")));
 
@@ -299,7 +300,6 @@ class MySkillAppServiceTest {
         given(skillRepository.findByOwnerId("user-1")).willReturn(List.of(alpha, beta, gamma));
         given(skillVersionRepository.findBySkillId(1L)).willReturn(List.of(publishedVersion));
         given(skillVersionRepository.findBySkillId(2L)).willReturn(List.of());
-        given(skillVersionRepository.findBySkillId(3L)).willReturn(List.of());
         given(namespaceRepository.findByIdIn(List.of(101L))).willReturn(List.of(namespace(101L, "team-ai")));
 
         var result = service.listMySkills("user-1", 0, 10, null, "alpha", null, Set.of("USER"));
@@ -314,11 +314,9 @@ class MySkillAppServiceTest {
         Skill aiSkill = createSkill(1L, 101L, "ai-tool", "user-1");
         Skill mlSkill = createSkill(2L, 102L, "ml-tool", "user-1");
         SkillVersion v1 = createVersion(1L, 10L, "1.0.0", SkillVersionStatus.PUBLISHED, "2026-03-15T09:30:00Z");
-        SkillVersion v2 = createVersion(2L, 20L, "1.0.0", SkillVersionStatus.PUBLISHED, "2026-03-15T09:30:00Z");
 
         given(skillRepository.findByOwnerId("user-1")).willReturn(List.of(aiSkill, mlSkill));
         given(skillVersionRepository.findBySkillId(1L)).willReturn(List.of(v1));
-        given(skillVersionRepository.findBySkillId(2L)).willReturn(List.of(v2));
         given(namespaceRepository.findBySlug("team-ai")).willReturn(java.util.Optional.of(namespace(101L, "team-ai")));
         given(namespaceRepository.findByIdIn(List.of(101L))).willReturn(List.of(namespace(101L, "team-ai")));
 
@@ -354,6 +352,7 @@ class MySkillAppServiceTest {
         SkillVersion v3 = createVersion(3L, 30L, "1.0.0", SkillVersionStatus.PUBLISHED, "2026-03-15T09:30:00Z");
 
         given(skillRepository.findByOwnerId("user-1")).willReturn(List.of(aiAlpha, aiBeta, mlAlpha));
+        given(skillVersionRepository.findBySkillIdAndStatus(1L, SkillVersionStatus.PUBLISHED)).willReturn(List.of(v1));
         given(skillVersionRepository.findBySkillId(1L)).willReturn(List.of(v1));
         given(skillVersionRepository.findBySkillId(2L)).willReturn(List.of(v2));
         given(skillVersionRepository.findBySkillId(3L)).willReturn(List.of(v3));

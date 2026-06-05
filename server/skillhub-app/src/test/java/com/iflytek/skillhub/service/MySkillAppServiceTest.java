@@ -354,8 +354,6 @@ class MySkillAppServiceTest {
         given(skillRepository.findByOwnerId("user-1")).willReturn(List.of(aiAlpha, aiBeta, mlAlpha));
         given(skillVersionRepository.findBySkillIdAndStatus(1L, SkillVersionStatus.PUBLISHED)).willReturn(List.of(v1));
         given(skillVersionRepository.findBySkillId(1L)).willReturn(List.of(v1));
-        given(skillVersionRepository.findBySkillId(2L)).willReturn(List.of(v2));
-        given(skillVersionRepository.findBySkillId(3L)).willReturn(List.of(v3));
         given(namespaceRepository.findBySlug("team-ai")).willReturn(java.util.Optional.of(namespace(101L, "team-ai")));
         given(namespaceRepository.findByIdIn(List.of(101L))).willReturn(List.of(namespace(101L, "team-ai")));
 

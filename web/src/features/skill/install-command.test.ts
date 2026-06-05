@@ -111,6 +111,20 @@ describe('install-command', () => {
     expect(html).toContain('break-all')
   })
 
+  it('renders install method tabs with only a short active underline', () => {
+    setMockWindow('https://app.example.com')
+
+    const html = renderToStaticMarkup(createElement(InstallCommand, {
+      namespace: 'global',
+      slug: 'meeting-minutes-generator',
+    }))
+
+    expect(html).toContain('after:w-6')
+    expect(html).toContain('after:h-0.5')
+    expect(html).not.toContain('rounded-lg border bg-background/80 p-1')
+    expect(html).not.toContain('flex-1 rounded-md')
+  })
+
   it('renders ClawHub CLI as the default install method', () => {
     setMockWindow('https://app.example.com')
 

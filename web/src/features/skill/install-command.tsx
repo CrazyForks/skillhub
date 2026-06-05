@@ -43,6 +43,9 @@ interface CommandBlockProps {
   command: string
 }
 
+const installMethodTabTriggerClass =
+  "relative border-b-0 px-1 py-2 text-xs after:absolute after:bottom-[-1px] after:left-1/2 after:h-0.5 after:w-6 after:-translate-x-1/2 after:rounded-full after:bg-transparent after:content-[''] data-[state=active]:after:bg-primary"
+
 function CommandBlock({ command }: CommandBlockProps) {
   const { t } = useTranslation()
   const [copied, copy] = useCopyToClipboard()
@@ -85,11 +88,11 @@ export function InstallCommand({ namespace, slug }: InstallCommandProps) {
 
   return (
     <Tabs defaultValue="clawhub" className="space-y-3">
-      <TabsList className="w-full gap-2 rounded-lg border bg-background/80 p-1 text-xs">
-        <TabsTrigger value="clawhub" className="flex-1 rounded-md px-3 py-2 text-xs">
+      <TabsList className="w-full gap-6 border-border/70 bg-transparent p-0 text-xs">
+        <TabsTrigger value="clawhub" className={installMethodTabTriggerClass}>
           {t('skillDetail.installMethodClawhub')}
         </TabsTrigger>
-        <TabsTrigger value="skillhub" className="flex-1 rounded-md px-3 py-2 text-xs">
+        <TabsTrigger value="skillhub" className={installMethodTabTriggerClass}>
           {t('skillDetail.installMethodSkillhub')}
         </TabsTrigger>
       </TabsList>

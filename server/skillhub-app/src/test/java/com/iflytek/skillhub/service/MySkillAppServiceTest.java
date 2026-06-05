@@ -265,6 +265,27 @@ class MySkillAppServiceTest {
         assertThat(result.items().get(0).headlineVersion().status()).isEqualTo("REJECTED");
     }
 
+    @Test
+    void listMySkills_hidesStaleRejectedVersionOlderThanPublished() {
+        Skill skill = createSkill(6L, 101L, "recovered-skill", "user-1");
+        SkillVersion rejectedVersion = createVersion(6L, 60L, "1.0.0", SkillVersionStatus.REJECTED, "2026-03-15T09:30:00Z");
+        SkillVersion publishedVersion = createVersion(6L, 61L, "2.0.0", SkillVersionStatus.PUBLISHED, "2026-03-16T09:30:00Z");
+
+        given(skillRepository.findByOwnerId("user-1", PageRequest.of(0, 10)))
+                .willReturn(new PageImpl<>(List.of(skill), PageRequest.of(0, 10), 1));
+        given(skillVersionRepository.findBySkillId(6L)).willReturn(List.of(rejectedVersion, publishedVersion));
+        given(skillVersionRepository.findBySkillIdAndStatus(6L, SkillVersionStatus.PUBLISHED))
+                .willReturn(List.of(publishedVersion));
+        given(namespaceRepository.findByIdIn(List.of(101L))).willReturn(List.of(namespace(101L, "team-ai")));
+
+        var result = service.listMySkills("user-1", 0, 10);
+
+        assertThat(result.items()).hasSize(1);
+        assertThat(result.items().get(0).headlineVersion().status()).isEqualTo("PUBLISHED");
+        assertThat(result.items().get(0).headlineVersion().version()).isEqualTo("2.0.0");
+        assertThat(result.items().get(0).ownerPreviewVersion()).isNull();
+    }
+
     private Skill createSkill(Long id, Long namespaceId, String slug, String ownerId) {
         Skill skill = new Skill(namespaceId, slug, ownerId, SkillVisibility.PUBLIC);
         skill.setDisplayName(slug);
